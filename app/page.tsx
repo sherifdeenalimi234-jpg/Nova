@@ -12,21 +12,57 @@ import FooterMap from "@/components/hub/FooterMap";
 import BottomNav from "@/components/navigation/BottomNav";
 import RingSystem from "@/components/feed/RingSystem";
 import FeedGrid from "@/components/feed/FeedGrid";
+import { createClient } from "@/lib/supabase/client";
+import { Plus } from "lucide-react";
 
 type AppPhase = "intro" | "profiles" | "hub";
 
 export default function Home() {
   const [phase, setPhase] = useState<AppPhase>("intro");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [activeTab, setActiveTab] = useState("explore"); // Default to explore in feed
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setPhase("hub"); // Skip intro if already logged in
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_verified_creator, is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.is_verified_creator || profile?.is_admin) {
+          setIsCreator(true);
+        }
+      }
+    };
+    checkUser();
+  }, []);
 
   const nextPhase = () => {
     if (phase === "intro") setPhase("profiles");
     else if (phase === "profiles") setPhase("hub");
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  const handleLogin = async () => {
+    // This is called when the sign-in button is clicked, but since it's OAuth redirect,
+    // the actual "login" happens after redirect back.
+    // However, if we implement a modal or similar later, this is useful.
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) console.error(error);
   };
 
   return (
@@ -103,9 +139,16 @@ export default function Home() {
                   className="pt-20"
                 >
                   {activeTab === "explore" && (
-                    <div className="animate-in fade-in duration-700">
+                    <div className="animate-in fade-in duration-700 relative">
                       <RingSystem />
                       <FeedGrid />
+
+                      {/* Creator Floating Action Button */}
+                      {isCreator && (
+                        <button className="fixed bottom-24 right-6 w-14 h-14 rounded-2xl bg-nova-cyan shadow-[0_0_20px_rgba(0,242,255,0.4)] flex items-center justify-center text-black hover:scale-110 active:scale-95 transition-all z-40 group">
+                           <Plus size={28} className="group-hover:rotate-90 transition-transform duration-300" />
+                        </button>
+                      )}
                     </div>
                   )}
 

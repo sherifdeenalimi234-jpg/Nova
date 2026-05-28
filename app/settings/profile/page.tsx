@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { User, Save, Loader2, Globe, Info, Camera } from 'lucide-react';
+import { User, Save, Loader2, Globe, Info, Camera, ShieldCheck, Zap } from 'lucide-react';
+import { requestCreatorAccess } from '@/lib/actions/profile';
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +12,9 @@ export default function ProfileSettings() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [username, setUsername] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   const supabase = createClient();
 
@@ -29,12 +33,37 @@ export default function ProfileSettings() {
           setFullName(data.full_name || '');
           setBio(data.bio || '');
           setUsername(data.custom_url || '');
+
+          // Check for pending requests
+          const { data: requests } = await supabase
+            .from('premium_requests')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'pending');
+
+          if (requests && requests.length > 0) {
+            setHasPendingRequest(true);
+          }
         }
       }
       setLoading(false);
     }
     fetchProfile();
   }, []);
+
+  const handleRequestAccess = async () => {
+    if (!paymentRef) return alert("Please provide a payment reference.");
+    setRequesting(true);
+    const { error } = await requestCreatorAccess(paymentRef);
+    if (!error) {
+      alert("Creator access request submitted. Our admins will verify your payment.");
+      setHasPendingRequest(true);
+    } else {
+      const errorMessage = typeof error === 'string' ? error : error.message;
+      alert("Request failed: " + errorMessage);
+    }
+    setRequesting(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -154,6 +183,52 @@ export default function ProfileSettings() {
               )}
               <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Synchronize Node</span>
            </button>
+
+           {/* Creator Access Section */}
+           {!profile?.is_verified_creator && (
+              <div className="mt-12 pt-12 border-t border-white/5">
+                 <div className="mb-6">
+                    <h2 className="text-lg font-black tracking-widest uppercase flex items-center gap-3">
+                       <Zap className="text-nova-purple" size={20} />
+                       Activate Creator Access
+                    </h2>
+                    <p className="text-white/40 text-xs mt-2 leading-relaxed">
+                       Unlock professional tools: research uploads, innovation showcase, analytics, and direct collaboration.
+                    </p>
+                 </div>
+
+                 {hasPendingRequest ? (
+                    <div className="p-6 rounded-2xl bg-nova-purple/5 border border-nova-purple/20 text-center">
+                       <ShieldCheck className="mx-auto mb-3 text-nova-purple animate-pulse" size={32} />
+                       <h3 className="text-sm font-bold uppercase tracking-widest mb-1 text-white">Verification in Progress</h3>
+                       <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Our admins are validating your credentials...</p>
+                    </div>
+                 ) : (
+                    <div className="space-y-4 p-6 rounded-2xl bg-white/5 border border-white/10">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+                             Payment Reference / Transaction ID
+                          </label>
+                          <input
+                             type="text"
+                             value={paymentRef}
+                             onChange={(e) => setPaymentRef(e.target.value)}
+                             className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 focus:border-nova-purple/50 focus:outline-none text-sm transition-all"
+                             placeholder="Enter manually processed ID"
+                          />
+                       </div>
+                       <button
+                          onClick={handleRequestAccess}
+                          disabled={requesting}
+                          className="w-full py-3 rounded-xl bg-nova-purple/20 border border-nova-purple/30 text-nova-purple text-[10px] font-black uppercase tracking-[0.3em] hover:bg-nova-purple/30 transition-all flex items-center justify-center gap-2"
+                       >
+                          {requesting ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                          Submit for Verification
+                       </button>
+                    </div>
+                 )}
+              </div>
+           )}
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Check, X, Eye, ExternalLink } from 'lucide-react';
+import { Check, X, Eye, ExternalLink, Loader2 } from 'lucide-react';
+import { moderatePost } from '@/lib/actions/admin';
 
 interface PendingPost {
   id: string;
@@ -15,10 +16,17 @@ interface PendingPost {
 
 export default function ContentModeration({ initialPosts = [] }: { initialPosts?: PendingPost[] }) {
   const [posts, setPosts] = useState(initialPosts);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
-    // Logic to update status in Supabase will go here
-    setPosts(posts.filter(p => p.id !== id));
+    setProcessingId(id);
+    const { error } = await moderatePost(id, status);
+    if (!error) {
+      setPosts(posts.filter(p => p.id !== id));
+    } else {
+      alert("System failure during moderation: " + error.message);
+    }
+    setProcessingId(null);
   };
 
   return (
@@ -51,20 +59,26 @@ export default function ContentModeration({ initialPosts = [] }: { initialPosts?
               </div>
 
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => handleAction(post.id, 'approved')}
-                  className="p-2 rounded-lg bg-nova-green/10 text-nova-green hover:bg-nova-green/20 transition-colors"
-                  title="Approve"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  onClick={() => handleAction(post.id, 'rejected')}
-                  className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-                  title="Reject"
-                >
-                  <X size={16} />
-                </button>
+                {processingId === post.id ? (
+                  <Loader2 size={16} className="animate-spin text-nova-cyan mx-4" />
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleAction(post.id, 'approved')}
+                      className="p-2 rounded-lg bg-nova-green/10 text-nova-green hover:bg-nova-green/20 transition-colors"
+                      title="Approve"
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleAction(post.id, 'rejected')}
+                      className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                      title="Reject"
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                )}
                 <button className="p-2 rounded-lg bg-white/5 text-white/60 hover:text-white transition-colors">
                   <Eye size={16} />
                 </button>

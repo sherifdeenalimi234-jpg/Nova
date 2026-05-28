@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ShieldCheck, XCircle, User } from 'lucide-react';
+import { ShieldCheck, XCircle, User, Loader2 } from 'lucide-react';
+import { moderatePremiumRequest } from '@/lib/actions/admin';
 
 interface PremiumRequest {
   id: string;
@@ -16,10 +17,17 @@ interface PremiumRequest {
 
 export default function PremiumVerification({ initialRequests = [] }: { initialRequests?: PremiumRequest[] }) {
   const [requests, setRequests] = useState(initialRequests);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
-    // Verification logic
-    setRequests(requests.filter(r => r.id !== id));
+    setProcessingId(id);
+    const { error } = await moderatePremiumRequest(id, status);
+    if (!error) {
+      setRequests(requests.filter(r => r.id !== id));
+    } else {
+      alert("Verification sequence failed: " + error.message);
+    }
+    setProcessingId(null);
   };
 
   return (
@@ -54,18 +62,26 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
               </div>
 
               <div className="flex gap-2">
-                 <button
-                  onClick={() => handleAction(req.id, 'approved')}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-nova-purple/20 text-nova-purple text-[10px] font-black uppercase tracking-widest hover:bg-nova-purple/30 transition-all"
-                 >
-                    <ShieldCheck size={14} /> Approve Access
-                 </button>
-                 <button
-                  onClick={() => handleAction(req.id, 'rejected')}
-                  className="px-4 flex items-center justify-center rounded-xl bg-white/5 text-white/40 hover:bg-red-500/10 hover:text-red-500 transition-all"
-                 >
-                    <XCircle size={14} />
-                 </button>
+                 {processingId === req.id ? (
+                   <div className="flex-1 flex items-center justify-center py-2">
+                      <Loader2 size={16} className="animate-spin text-nova-purple" />
+                   </div>
+                 ) : (
+                   <>
+                    <button
+                      onClick={() => handleAction(req.id, 'approved')}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-nova-purple/20 text-nova-purple text-[10px] font-black uppercase tracking-widest hover:bg-nova-purple/30 transition-all"
+                    >
+                        <ShieldCheck size={14} /> Approve Access
+                    </button>
+                    <button
+                      onClick={() => handleAction(req.id, 'rejected')}
+                      className="px-4 flex items-center justify-center rounded-xl bg-white/5 text-white/40 hover:bg-red-500/10 hover:text-red-500 transition-all"
+                    >
+                        <XCircle size={14} />
+                    </button>
+                   </>
+                 )}
               </div>
             </div>
           ))}
