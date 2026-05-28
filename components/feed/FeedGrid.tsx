@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Heart, Eye, MoreVertical, Loader2 } from "lucide-react";
+import { Heart, Eye, MoreVertical, Loader2, ListTodo, BarChart3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import TakeSurveyModal from "./TakeSurveyModal";
+import Link from "next/link";
 
 const FeedGrid = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSurvey, setSelectedSurvey] = useState<any>(null);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -67,7 +70,9 @@ const FeedGrid = () => {
                 <div className="text-[9px] text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
                   <span>{new Date(post.created_at).toLocaleDateString()}</span>
                   <span className="w-0.5 h-0.5 bg-white/20 rounded-full" />
-                  <span className="text-nova-cyan">{post.post_type.toUpperCase().replace('_', ' ')}</span>
+                  <span className={post.post_type === 'survey' ? 'text-nova-purple' : 'text-nova-cyan'}>
+                    {post.post_type.toUpperCase().replace('_', ' ')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -86,6 +91,22 @@ const FeedGrid = () => {
             {/* Subtle digital overlay */}
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] bg-repeat" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+            {/* Survey Overlay */}
+            {post.post_type === 'survey' && (
+               <div className="absolute inset-0 flex items-center justify-center bg-nova-purple/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={async () => {
+                      const supabase = createClient();
+                      const { data } = await supabase.from('surveys').select('*').eq('title', post.title).single();
+                      if (data) setSelectedSurvey(data);
+                    }}
+                    className="px-8 py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-110 transition-all flex items-center gap-3"
+                  >
+                     <ListTodo size={16} /> Participate
+                  </button>
+               </div>
+            )}
           </div>
 
           {/* Interaction Bar */}
@@ -102,6 +123,20 @@ const FeedGrid = () => {
                 <span className="text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/70">View</span>
                 <span className="text-[10px] text-nova-cyan/60 ml-1">0</span>
               </button>
+
+              {post.post_type === 'survey' && (
+                <button
+                  onClick={async () => {
+                    const supabase = createClient();
+                    const { data } = await supabase.from('surveys').select('id').eq('title', post.title).single();
+                    if (data) window.location.href = `/surveys/${data.id}/analytics`;
+                  }}
+                  className="flex items-center gap-2 group transition-all"
+                >
+                  <BarChart3 size={20} className="text-white/60 group-hover:text-nova-purple transition-all" />
+                  <span className="text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/70">Analytics</span>
+                </button>
+              )}
             </div>
 
             <p className="text-[13px] text-white/70 leading-relaxed font-light">
@@ -111,6 +146,11 @@ const FeedGrid = () => {
           </div>
         </article>
       ))}
+      <TakeSurveyModal
+        isOpen={!!selectedSurvey}
+        onClose={() => setSelectedSurvey(null)}
+        survey={selectedSurvey}
+      />
     </div>
   );
 };

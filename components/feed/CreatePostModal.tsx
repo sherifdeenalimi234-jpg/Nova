@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Send, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Send, Image as ImageIcon, Loader2, ListTodo } from 'lucide-react';
 import { createPost } from '@/lib/actions/posts';
+import CreateSurveyModal from './CreateSurveyModal';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface CreatePostModalProps {
 
 export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProps) {
   const [loading, setLoading] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('research');
@@ -46,11 +48,25 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
       <div className="w-full max-w-xl bg-[#0a0a0b] border border-white/10 rounded-[32px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
         <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between">
-          <h2 className="text-sm font-black uppercase tracking-[0.3em] text-nova-cyan">Publish Research Signal</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-nova-cyan">Publish Research Signal</h2>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                setIsSurveyModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-nova-purple/10 border border-nova-purple/20 text-[8px] font-black uppercase tracking-widest text-nova-purple hover:bg-nova-purple/20 transition-all"
+            >
+               <ListTodo size={12} /> Switch to Survey
+            </button>
+          </div>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
+
+        <CreateSurveyModal isOpen={isSurveyModalOpen} onClose={() => setIsSurveyModalOpen(false)} />
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-2">
