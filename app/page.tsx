@@ -12,6 +12,7 @@ import FooterMap from "@/components/hub/FooterMap";
 import BottomNav from "@/components/navigation/BottomNav";
 import RingSystem from "@/components/feed/RingSystem";
 import FeedGrid from "@/components/feed/FeedGrid";
+import CreatePostModal from "@/components/feed/CreatePostModal";
 import { createClient } from "@/lib/supabase/client";
 import { Plus } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default function Home() {
   const [phase, setPhase] = useState<AppPhase>("intro");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("explore"); // Default to explore in feed
 
   useEffect(() => {
@@ -145,10 +147,18 @@ export default function Home() {
 
                       {/* Creator Floating Action Button */}
                       {isCreator && (
-                        <button className="fixed bottom-24 right-6 w-14 h-14 rounded-2xl bg-nova-cyan shadow-[0_0_20px_rgba(0,242,255,0.4)] flex items-center justify-center text-black hover:scale-110 active:scale-95 transition-all z-40 group">
+                        <button
+                          onClick={() => setIsCreateModalOpen(true)}
+                          className="fixed bottom-24 right-6 w-14 h-14 rounded-2xl bg-nova-cyan shadow-[0_0_20px_rgba(0,242,255,0.4)] flex items-center justify-center text-black hover:scale-110 active:scale-95 transition-all z-40 group"
+                        >
                            <Plus size={28} className="group-hover:rotate-90 transition-transform duration-300" />
                         </button>
                       )}
+
+                      <CreatePostModal
+                        isOpen={isCreateModalOpen}
+                        onClose={() => setIsCreateModalOpen(false)}
+                      />
                     </div>
                   )}
 
