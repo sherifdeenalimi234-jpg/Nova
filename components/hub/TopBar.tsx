@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { User, LogIn, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface TopBarProps {
   onLogin?: () => void;
@@ -10,14 +12,21 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onLogin, isAuthenticated }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const supabase = createClient();
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setIsLoggingIn(true);
-    // Simulate Google OAuth Redirect/Return
-    setTimeout(() => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      console.error('Error logging in:', error.message);
       setIsLoggingIn(false);
-      if (onLogin) onLogin();
-    }, 1500);
+    }
   };
 
   return (
@@ -49,11 +58,13 @@ const TopBar: React.FC<TopBarProps> = ({ onLogin, isAuthenticated }) => {
             <div className="text-[10px] font-bold text-white uppercase tracking-wider">Authenticated</div>
             <div className="text-[8px] text-nova-cyan uppercase tracking-widest">Active Node</div>
           </div>
-          <div className="w-10 h-10 rounded-xl border border-nova-cyan/40 p-0.5 bg-nova-cyan/5">
-             <div className="w-full h-full rounded-lg bg-gradient-to-br from-nova-cyan/40 to-nova-purple/40 flex items-center justify-center">
-                <User size={18} className="text-white" />
-             </div>
-          </div>
+          <Link href="/settings/profile" className="block">
+            <div className="w-10 h-10 rounded-xl border border-nova-cyan/40 p-0.5 bg-nova-cyan/5 hover:border-nova-cyan/80 transition-all cursor-pointer">
+               <div className="w-full h-full rounded-lg bg-gradient-to-br from-nova-cyan/40 to-nova-purple/40 flex items-center justify-center">
+                  <User size={18} className="text-white" />
+               </div>
+            </div>
+          </Link>
         </div>
       )}
     </header>
