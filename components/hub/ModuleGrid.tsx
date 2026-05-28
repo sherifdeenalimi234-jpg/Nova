@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { LayoutGrid, ClipboardList, Users2, LineChart, History, Image as ImageIcon, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface ModuleGridProps {
+  onAction?: () => void;
+}
+
 const modules = [
   { id: "projects", title: "Projects", icon: LayoutGrid, color: "text-nova-cyan" },
   { id: "surveys", title: "Surveys", icon: ClipboardList, color: "text-nova-purple" },
@@ -13,7 +17,7 @@ const modules = [
   { id: "gallery", title: "Gallery", icon: ImageIcon, color: "text-nova-cyan" },
 ];
 
-const ModuleGrid = () => {
+const ModuleGrid: React.FC<ModuleGridProps> = ({ onAction }) => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   const handleCardClick = () => {
@@ -57,20 +61,20 @@ const ModuleGrid = () => {
               <div className="w-16 h-16 bg-nova-cyan/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Lock className="text-nova-cyan" size={28} />
               </div>
-              <h4 className="text-xl font-bold mb-2">Restricted Access</h4>
+              <h4 className="text-xl font-bold mb-2 uppercase tracking-tighter">Restricted Access</h4>
               <p className="text-white/60 text-sm mb-8">Please sign in to access this module and continue your innovation journey.</p>
               <button
                 onClick={() => {
                    setShowPrompt(false);
-                   // In real app, trigger sign in
+                   if (onAction) onAction();
                 }}
-                className="w-full py-4 bg-nova-cyan text-black font-bold uppercase tracking-widest rounded-xl hover:bg-cyan-400 transition-colors"
+                className="w-full py-4 bg-nova-cyan text-black font-black uppercase tracking-[0.2em] rounded-xl hover:bg-cyan-400 transition-colors"
               >
                 Sign In With Google
               </button>
               <button
                 onClick={() => setShowPrompt(false)}
-                className="mt-4 text-xs text-white/30 uppercase tracking-widest"
+                className="mt-4 text-[10px] text-white/30 uppercase tracking-[0.2em]"
               >
                 Cancel
               </button>

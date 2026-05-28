@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Home, Compass, Cpu, User, MoreHorizontal, X, LayoutGrid, ClipboardList, ImageIcon, BarChart3, Bell, Settings, HelpCircle, LogOut, ChevronLeft } from "lucide-react";
+import { Home, Compass, Cpu, User, MoreHorizontal, LayoutGrid, ClipboardList, ImageIcon, BarChart3, Bell, Settings, HelpCircle, LogOut, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BottomNavProps {
@@ -11,6 +11,7 @@ interface BottomNavProps {
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const tabs = [
     { id: "home", icon: Home, label: "Home" },
@@ -36,6 +37,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
     } else {
       setActiveTab(tabId);
     }
+  };
+
+  const handleLogout = () => {
+    // Logic for logout would go here
+    window.location.reload();
   };
 
   return (
@@ -75,7 +81,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsMoreOpen(false)}
+              onClick={() => {
+                setIsMoreOpen(false);
+                setShowLogoutConfirm(false);
+              }}
               className="absolute inset-0 bg-black/90 backdrop-blur-md"
             />
             <motion.div
@@ -83,15 +92,15 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-[#0a0a0a] rounded-t-[3rem] border-t border-white/10 px-6 pt-6 pb-12"
+              className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-[#0a0a0a] rounded-t-[3rem] border-t border-white/10 px-6 pt-6 pb-12 overflow-hidden"
             >
               <div className="flex items-center justify-between mb-8">
                 <button
                   onClick={() => setIsMoreOpen(false)}
-                  className="flex items-center gap-2 text-white/40 hover:text-white"
+                  className="flex items-center gap-2 text-white/40 hover:text-white transition-colors"
                 >
                   <ChevronLeft size={20} />
-                  <span className="text-xs uppercase tracking-[0.2em]">Back to Feed</span>
+                  <span className="text-xs uppercase tracking-[0.2em]">Back</span>
                 </button>
                 <div className="w-12 h-1.5 bg-white/10 rounded-full" />
                 <div className="w-10" /> {/* Spacer */}
@@ -108,11 +117,46 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
                 ))}
               </div>
 
-              <div className="mt-12 pt-8 border-t border-white/5">
-                <button className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 active:scale-95 transition-transform">
-                  <LogOut size={20} />
-                  <span className="text-xs font-bold uppercase tracking-[0.2em]">Logout Session</span>
-                </button>
+              <div className="mt-12 pt-8 border-t border-white/5 relative">
+                <AnimatePresence mode="wait">
+                  {!showLogoutConfirm ? (
+                    <motion.button
+                      key="logout-btn"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowLogoutConfirm(true)}
+                      className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-red-500/5 border border-red-500/20 text-red-500/80 active:scale-95 transition-transform"
+                    >
+                      <LogOut size={18} />
+                      <span className="text-xs font-bold uppercase tracking-[0.2em]">Logout Session</span>
+                    </motion.button>
+                  ) : (
+                    <motion.div
+                      key="confirm-box"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className="flex flex-col items-center gap-4"
+                    >
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">Are you sure you want to exit?</span>
+                      <div className="flex gap-4 w-full">
+                        <button
+                          onClick={() => setShowLogoutConfirm(false)}
+                          className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[10px] uppercase tracking-[0.2em]"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="flex-1 py-3 rounded-xl bg-red-500 text-white text-[10px] font-bold uppercase tracking-[0.2em]"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </div>
