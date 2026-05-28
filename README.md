@@ -47,6 +47,29 @@ npm install
 npm run dev
 ```
 
+## 🚀 Deployment
+
+### Backend (Supabase)
+1. **Database:** Go to the SQL Editor in your Supabase Dashboard and run the contents of `supabase/migrations/20240528000000_initial_schema.sql` to initialize the tables, RLS policies, and triggers.
+2. **Storage:** Manually create the following public buckets in the Storage section:
+   - `avatars`
+   - `projects`
+   - `research`
+   - `surveys`
+   - `thumbnails`
+   - `documents`
+3. **Authentication:**
+   - Enable **Google** as an Auth Provider.
+   - Configure the Client ID and Secret in the Supabase Dashboard.
+   - Add your production URL (e.g., `https://nova-community.vercel.app/auth/callback`) to the Google Cloud Console "Authorized redirect URIs".
+
+### Frontend (Vercel)
+1. **Connect Repository:** Import your project into Vercel.
+2. **Environment Variables:** Add the following to your Vercel Project Settings:
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase Project URL.
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase Anon Key.
+3. **Build Settings:** Vercel will automatically detect Next.js settings. Click **Deploy**.
+
 ## 📅 Roadmap
 
 - [x] **Phase 1: Foundation System** - Secure infrastructure, Auth, and DB Schema.
