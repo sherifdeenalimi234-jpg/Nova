@@ -1,7 +1,7 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import PremiumVerification from '@/components/admin/PremiumVerification';
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 
 export default async function AdminCreatorsPage() {
   const supabase = await createClient();
