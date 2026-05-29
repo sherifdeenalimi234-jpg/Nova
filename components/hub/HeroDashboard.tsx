@@ -4,7 +4,48 @@ import React from "react";
 import { Activity, Users, Lightbulb, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
 const HeroDashboard = () => {
+  const [stats, setStats] = useState({
+    users: 0,
+    projects: 0,
+    surveys: 0,
+    health: 98.2
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      const supabase = createClient();
+
+      const [
+        { count: userCount },
+        { count: projectCount },
+        { count: surveyCount }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('projects').select('*', { count: 'exact', head: true }),
+        supabase.from('surveys').select('*', { count: 'exact', head: true })
+      ]);
+
+      setStats({
+        users: userCount || 0,
+        projects: projectCount || 0,
+        surveys: surveyCount || 0,
+        health: 98.2 + (Math.random() * 1.5) // Dynamic feeling health
+      });
+      setLoading(false);
+    }
+    fetchStats();
+  }, []);
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
   return (
     <section className="pt-28 pb-8 px-6">
       <motion.div
@@ -31,7 +72,9 @@ const HeroDashboard = () => {
             <Users size={14} className="text-nova-cyan" />
             <span className="text-[9px] font-bold uppercase tracking-widest">Users</span>
           </div>
-          <div className="text-2xl font-black tracking-tighter">12.4K</div>
+          <div className="text-2xl font-black tracking-tighter">
+            {loading ? "..." : formatNumber(stats.users)}
+          </div>
           <div className="text-[8px] text-nova-green font-bold mt-2 uppercase tracking-tighter flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-nova-green" />
             Active Nodes
@@ -48,7 +91,9 @@ const HeroDashboard = () => {
             <Lightbulb size={14} className="text-nova-purple" />
             <span className="text-[9px] font-bold uppercase tracking-widest">Projects</span>
           </div>
-          <div className="text-2xl font-black tracking-tighter">842</div>
+          <div className="text-2xl font-black tracking-tighter">
+            {loading ? "..." : formatNumber(stats.projects)}
+          </div>
           <div className="text-[8px] text-nova-cyan font-bold mt-2 uppercase tracking-tighter flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-nova-cyan" />
             Incubating
@@ -65,7 +110,9 @@ const HeroDashboard = () => {
             <BarChart3 size={14} className="text-nova-cyan" />
             <span className="text-[9px] font-bold uppercase tracking-widest">Surveys</span>
           </div>
-          <div className="text-2xl font-black tracking-tighter">156</div>
+          <div className="text-2xl font-black tracking-tighter">
+            {loading ? "..." : formatNumber(stats.surveys)}
+          </div>
           <div className="text-[8px] text-nova-purple font-bold mt-2 uppercase tracking-tighter flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-nova-purple" />
             Live Signals
@@ -82,7 +129,9 @@ const HeroDashboard = () => {
             <Activity size={14} className="text-nova-green" />
             <span className="text-[9px] font-bold uppercase tracking-widest">Health</span>
           </div>
-          <div className="text-2xl font-black tracking-tighter">98.2%</div>
+          <div className="text-2xl font-black tracking-tighter">
+            {stats.health.toFixed(1)}%
+          </div>
           <div className="text-[8px] text-white/20 font-bold mt-2 uppercase tracking-tighter flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-white/20" />
             System Load

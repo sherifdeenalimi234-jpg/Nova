@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Home, Compass, Cpu, User, MoreHorizontal, LayoutGrid, ClipboardList, ImageIcon, BarChart3, Bell, Settings, HelpCircle, LogOut, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 interface BottomNavProps {
   activeTab: string;
@@ -22,13 +24,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   const moreItems = [
-    { label: "Projects", icon: LayoutGrid },
-    { label: "Surveys", icon: ClipboardList },
-    { label: "Gallery", icon: ImageIcon },
-    { label: "Analytics", icon: BarChart3 },
-    { label: "Notifications", icon: Bell },
-    { label: "Settings", icon: Settings },
-    { label: "Help Center", icon: HelpCircle },
+    { label: "Projects", icon: LayoutGrid, href: "/projects" },
+    { label: "Surveys", icon: ClipboardList, href: "/surveys" },
+    { label: "Gallery", icon: ImageIcon, href: "/gallery" },
+    { label: "Analytics", icon: BarChart3, href: "/analytics" },
+    { label: "Notifications", icon: Bell, href: "/notifications" },
+    { label: "Settings", icon: Settings, href: "/settings/profile" },
+    { label: "Help Center", icon: HelpCircle, href: "/help" },
   ];
 
   const handleTabClick = (tabId: string) => {
@@ -39,9 +41,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
     }
   };
 
-  const handleLogout = () => {
-    // Logic for logout would go here
-    window.location.reload();
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   return (
@@ -108,12 +111,17 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
 
               <div className="grid grid-cols-4 gap-y-8 gap-x-2">
                 {moreItems.map((item, index) => (
-                  <button key={index} className="flex flex-col items-center gap-3 group">
+                  <Link
+                    key={index}
+                    href={item.href}
+                    onClick={() => setIsMoreOpen(false)}
+                    className="flex flex-col items-center gap-3 group"
+                  >
                     <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-active:scale-90 transition-transform">
                       <item.icon size={24} className="text-white/60 group-hover:text-nova-cyan transition-colors" />
                     </div>
                     <span className="text-[10px] text-white/40 uppercase tracking-tighter text-center">{item.label}</span>
-                  </button>
+                  </Link>
                 ))}
               </div>
 

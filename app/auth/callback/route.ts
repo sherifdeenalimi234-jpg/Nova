@@ -10,8 +10,25 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error && session?.user) {
+      const user = session.user
+      const adminEmail = 'sherifdeenalimititilope@gmail.com'
+
+      // Automatically assign admin and creator privileges to the specified email
+      if (user.email === adminEmail) {
+        await supabase
+          .from('profiles')
+          .update({
+            is_admin: true,
+            is_verified_creator: true,
+            full_name: user.user_metadata.full_name || user.email?.split('@')[0],
+            avatar_url: user.user_metadata.avatar_url
+          })
+          .eq('id', user.id)
+      }
+
       const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
       if (isLocalEnv) {

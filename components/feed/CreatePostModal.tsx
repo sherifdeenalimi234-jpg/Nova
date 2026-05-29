@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, Send, Image as ImageIcon, Loader2, ListTodo } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Send, Image as ImageIcon, Loader2, ListTodo, Upload } from 'lucide-react';
 import { createPost } from '@/lib/actions/posts';
 import CreateSurveyModal from './CreateSurveyModal';
+import { uploadFile } from '@/lib/supabase/storage';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -16,7 +17,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('research');
-  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -24,11 +27,26 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     e.preventDefault();
     setLoading(true);
 
+    let finalMediaUrl = "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000";
+
+    if (mediaFile) {
+      setUploadProgress(true);
+      try {
+        finalMediaUrl = await uploadFile(mediaFile, 'thumbnails');
+      } catch (err: any) {
+        alert("Media upload failed: " + err.message);
+        setLoading(false);
+        setUploadProgress(false);
+        return;
+      }
+      setUploadProgress(false);
+    }
+
     const { error } = await createPost({
       title,
       content,
       post_type: postType,
-      media_url: mediaUrl || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000" // Default if empty for now
+      media_url: finalMediaUrl
     });
 
     if (!error) {
@@ -36,7 +54,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       onClose();
       setTitle('');
       setContent('');
-      setMediaUrl('');
+      setMediaFile(null);
     } else {
       const errorMessage = typeof error === 'string' ? error : error.message;
       alert("Upload failed: " + errorMessage);
@@ -96,15 +114,22 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Media URL</label>
-              <div className="relative">
+              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Visual Asset</label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full bg-white/5 border border-dashed border-white/10 rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-nova-cyan/50 transition-all flex items-center gap-3"
+              >
+                <Upload size={14} className="text-white/20" />
+                <span className="text-white/40 text-[11px] truncate">
+                  {mediaFile ? mediaFile.name : "Upload Image..."}
+                </span>
                 <input
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-nova-cyan/50 transition-all"
-                  placeholder="Unsplash URL..."
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  accept="image/*"
                 />
-                <ImageIcon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" />
               </div>
             </div>
           </div>
@@ -127,7 +152,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-nova-cyan to-nova-purple text-black text-[10px] font-black uppercase tracking-[0.4em] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-            Synchronize Signal
+            {uploadProgress ? "Uploading Assets..." : "Synchronize Signal"}
           </button>
         </form>
       </div>
