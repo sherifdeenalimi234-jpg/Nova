@@ -10,7 +10,8 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
 import { moderatePremiumRequest } from '@/lib/actions/admin';
 import { cn } from '@/lib/utils';
@@ -34,16 +35,38 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);
-    const { error } = await moderatePremiumRequest(id, status);
-    if (!error) {
-      setRequests(requests.filter(r => r.id !== id));
-    } else {
-      alert("Verification sequence failed: " + (error as any).message);
+    setNotification(null);
+
+    try {
+      const result = await moderatePremiumRequest(id, status);
+
+      if (result.success || !result.error) {
+        setRequests(requests.filter(r => r.id !== id));
+        setNotification({
+          type: 'success',
+          message: `Request ${status === 'approved' ? 'authorized' : 'rejected'} successfully.`
+        });
+
+        // Clear notification after 3 seconds
+        setTimeout(() => setNotification(null), 3000);
+      } else {
+        setNotification({
+          type: 'error',
+          message: "Verification sequence failed: " + (result.error as any).message
+        });
+      }
+    } catch (err: any) {
+      setNotification({
+        type: 'error',
+        message: "An unexpected error occurred: " + err.message
+      });
+    } finally {
+      setProcessingId(null);
     }
-    setProcessingId(null);
   };
 
   const filteredRequests = requests.filter(r =>
@@ -58,9 +81,29 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
           <h3 className="text-base md:text-lg font-bold tracking-widest uppercase text-white leading-none">Creator Intake</h3>
           <p className="text-[9px] md:text-[10px] text-white/30 uppercase tracking-widest mt-2 font-medium">Awaiting authentication</p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-nova-purple/10 border border-nova-purple/20 text-[9px] font-black text-nova-purple uppercase tracking-widest">
-          {requests.length} PENDING
-        </span>
+        <div className="flex items-center gap-4">
+          <AnimatePresence>
+            {notification && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border",
+                  notification.type === 'success'
+                    ? "bg-green-500/10 border-green-500/20 text-green-500"
+                    : "bg-red-500/10 border-red-500/20 text-red-500"
+                )}
+              >
+                {notification.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                {notification.message}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <span className="px-3 py-1 rounded-full bg-nova-purple/10 border border-nova-purple/20 text-[9px] font-black text-nova-purple uppercase tracking-widest">
+            {requests.length} PENDING
+          </span>
+        </div>
       </div>
 
       <div className="relative group">
@@ -131,14 +174,22 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                  ) : (
                    <>
                     <button
+                      disabled={!!processingId}
                       onClick={() => handleAction(req.id, 'approved')}
-                      className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-nova-purple/10 text-nova-purple text-[9px] font-black uppercase tracking-widest hover:bg-nova-purple/20 transition-all border border-nova-purple/20"
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-nova-purple/10 text-nova-purple text-[9px] font-black uppercase tracking-widest transition-all border border-nova-purple/20",
+                        processingId ? "opacity-50 cursor-not-allowed" : "hover:bg-nova-purple/20"
+                      )}
                     >
                         <ShieldCheck size={14} /> Authorize
                     </button>
                     <button
+                      disabled={!!processingId}
                       onClick={() => handleAction(req.id, 'rejected')}
-                      className="flex items-center justify-center py-3.5 rounded-2xl bg-white/5 text-white/20 hover:bg-red-500/10 hover:text-red-500 transition-all border border-white/5"
+                      className={cn(
+                        "flex items-center justify-center py-3.5 rounded-2xl bg-white/5 text-white/20 transition-all border border-white/5",
+                        processingId ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500/10 hover:text-red-500"
+                      )}
                     >
                         <XCircle size={16} />
                     </button>
