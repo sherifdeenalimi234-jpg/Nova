@@ -23,10 +23,12 @@ interface PremiumRequest {
   profiles: {
     full_name: string;
     avatar_url: string | null;
+    email?: string;
   };
   payment_reference: string;
   created_at: string;
   verification_doc_url?: string;
+  payment_note?: string;
   category?: string;
   approved_at?: string;
 }
@@ -112,7 +114,10 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                          {req.category || 'INNOVATOR'}
                       </span>
                    </div>
-                   <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono truncate">ID: {req.payment_reference}</p>
+                   <div className="flex flex-col gap-0.5">
+                      <p className="text-[9px] text-white/40 uppercase tracking-widest font-medium truncate">{req.profiles.email || 'No email associated'}</p>
+                      <p className="text-[10px] text-nova-cyan uppercase tracking-widest font-mono truncate">REF: {req.payment_reference}</p>
+                   </div>
                 </div>
               </div>
 
@@ -181,22 +186,44 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                       <XCircle size={20} />
                    </button>
                 </div>
-                <div className="flex-1 bg-black/80 flex items-center justify-center p-10 relative">
+                <div className="flex-1 bg-black/80 flex flex-col items-center justify-center p-6 md:p-10 relative overflow-y-auto">
                    {/* Background Glow */}
                    <div className="absolute inset-0 bg-nova-cyan/2 blur-[80px]" />
 
-                   <div className="text-center relative z-10">
-                      <div className="w-20 h-20 rounded-3xl border border-nova-cyan/20 bg-nova-cyan/5 flex items-center justify-center mx-auto mb-6">
-                         <AlertCircle size={40} className="text-nova-cyan animate-pulse" />
+                   {selectedDoc && selectedDoc !== '#' ? (
+                      <div className="w-full h-full flex flex-col items-center gap-8">
+                         <div className="relative w-full max-w-2xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                            <img src={selectedDoc} alt="Payment Proof" className="w-full h-full object-contain bg-black" />
+                         </div>
+
+                         {filteredRequests.find(r => r.verification_doc_url === selectedDoc)?.payment_note && (
+                            <div className="max-w-xl w-full p-6 rounded-[2rem] bg-white/[0.02] border border-white/5">
+                               <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-3">Applicant Note</p>
+                               <p className="text-sm text-white/60 leading-relaxed italic">
+                                  "{filteredRequests.find(r => r.verification_doc_url === selectedDoc)?.payment_note}"
+                               </p>
+                            </div>
+                         )}
+
+                         <a
+                           href={selectedDoc}
+                           target="_blank"
+                           className="px-8 py-3 rounded-2xl bg-nova-cyan text-black text-[9px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2"
+                         >
+                            <ExternalLink size={12} /> Open Original Document
+                         </a>
                       </div>
-                      <p className="text-[10px] md:text-xs uppercase tracking-[0.4em] text-white/40 font-black">Secure Terminal Link Active</p>
-                      <p className="text-xs md:text-sm text-white/20 mt-6 max-w-xs mx-auto italic font-medium leading-relaxed">
-                         Credential stream encrypted. Verified documentation would be rendered here via secure sandbox protocol.
-                      </p>
-                      <button className="mt-10 px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 mx-auto">
-                         <ExternalLink size={12} /> Open Full Decryption
-                      </button>
-                   </div>
+                   ) : (
+                      <div className="text-center relative z-10">
+                         <div className="w-20 h-20 rounded-3xl border border-nova-cyan/20 bg-nova-cyan/5 flex items-center justify-center mx-auto mb-6">
+                            <AlertCircle size={40} className="text-nova-cyan animate-pulse" />
+                         </div>
+                         <p className="text-[10px] md:text-xs uppercase tracking-[0.4em] text-white/40 font-black">No Document Stream Detected</p>
+                         <p className="text-xs md:text-sm text-white/20 mt-6 max-w-xs mx-auto italic font-medium leading-relaxed">
+                            This applicant has not attached a visual credential stream to their request.
+                         </p>
+                      </div>
+                   )}
                 </div>
              </motion.div>
           </motion.div>

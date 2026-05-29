@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function requestCreatorAccess(paymentRef: string) {
+export async function requestCreatorAccess(paymentRef: string, proofUrl?: string, note?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -14,6 +14,8 @@ export async function requestCreatorAccess(paymentRef: string) {
     .insert({
       user_id: user.id,
       payment_reference: paymentRef,
+      verification_doc_url: proofUrl,
+      payment_note: note,
       status: 'pending'
     });
 
@@ -24,6 +26,7 @@ export async function requestCreatorAccess(paymentRef: string) {
     .from('profiles')
     .update({
       creator_status: 'pending',
+      payment_status: 'under_review',
       approved: false
     })
     .eq('id', user.id);

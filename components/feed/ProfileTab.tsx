@@ -1,21 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Shield, ArrowRight, Rocket, Briefcase, FileText, LayoutDashboard, Loader2 } from "lucide-react";
+import { User, Shield, ArrowRight, Rocket, Briefcase, FileText, LayoutDashboard, Loader2, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { requestCreatorAccess } from "@/lib/actions/profile";
+import CreatorUpgradeModal from "./CreatorUpgradeModal";
 
 export default function ProfileTab() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState(false);
-  const [requestSent, setRequestSent] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   useEffect(() => {
+    const supabase = createClient();
+    let profileSubscription: any;
+
     async function fetchProfile() {
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
@@ -24,10 +25,34 @@ export default function ProfileTab() {
           .eq('id', user.id)
           .single();
         setProfile(data);
+
+        // Realtime subscription for instant updates (e.g. admin approval)
+        if (!profileSubscription) {
+          profileSubscription = supabase
+            .channel(`profile-tab-${user.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'profiles',
+                filter: `id=eq.${user.id}`
+              },
+              (payload) => {
+                console.log("[Realtime] Profile updated in ProfileTab:", payload.new);
+                setProfile(payload.new);
+              }
+            )
+            .subscribe();
+        }
       }
       setLoading(false);
     }
     fetchProfile();
+
+    return () => {
+      if (profileSubscription) profileSubscription.unsubscribe();
+    };
   }, []);
 
   if (loading) return (
@@ -127,28 +152,37 @@ export default function ProfileTab() {
                   Unlock professional portfolio tools, research logs, survey systems, and ecosystem-wide visibility.
                </p>
                <button
-                 disabled={requesting || requestSent || profile.creator_status === 'pending'}
-                 onClick={async () => {
-                    setRequesting(true);
-                    const { error } = await requestCreatorAccess("MANUAL_APP_" + profile.id);
-                    if (!error) setRequestSent(true);
-                    setRequesting(false);
-                 }}
-                 className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                 disabled={profile.creator_status === 'pending'}
+                 onClick={() => setIsUpgradeModalOpen(true)}
+                 className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
                >
-                  {requesting ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (requestSent || profile.creator_status === 'pending') ? (
-                    "Request Transmitted"
+                  {profile.creator_status === 'pending' ? (
+                    <>
+                       <Loader2 size={14} className="animate-spin" />
+                       Verification Pending
+                    </>
                   ) : profile.creator_status === 'rejected' ? (
                     "Re-apply for Access"
                   ) : (
                     "Begin Application"
                   )}
                </button>
+
+               {profile.creator_status === 'rejected' && (
+                  <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+                     <AlertCircle size={14} className="text-red-500 shrink-0" />
+                     <p className="text-[9px] font-black uppercase tracking-widest text-red-500/70">Previous request declined. Please verify payment details and resubmit.</p>
+                  </div>
+               )}
             </div>
          )}
       </section>
+
+      <CreatorUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        user={profile}
+      />
 
       {/* Content Stats */}
       <div className="grid grid-cols-3 gap-4">

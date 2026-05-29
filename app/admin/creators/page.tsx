@@ -7,7 +7,7 @@ export default async function AdminCreatorsPage() {
 
   const { data: premiumRequests } = await supabase
     .from('premium_requests')
-    .select('*, profiles(full_name, avatar_url)')
+    .select('*, profiles(full_name, avatar_url, email)')
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 

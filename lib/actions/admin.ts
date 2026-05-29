@@ -38,6 +38,18 @@ export async function featurePost(postId: string, isFeatured: boolean) {
 export async function moderatePremiumRequest(requestId: string, status: 'approved' | 'rejected') {
   const supabase = await createClient();
 
+  // Security check: Only admins can moderate requests
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!adminProfile?.is_admin) return { error: "Unauthorized access." };
+
   // 1. Update the request status
   const { data: request, error: requestError } = await supabase
     .from('premium_requests')
@@ -58,6 +70,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .update({
         is_verified_creator: true,
         creator_status: 'approved',
+        payment_status: 'verified',
         creator_approved_at: new Date().toISOString(),
         approved: true
       })
@@ -77,6 +90,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .update({
         is_verified_creator: false,
         creator_status: 'rejected',
+        payment_status: 'rejected',
         approved: false
       })
       .eq('id', request.user_id);
