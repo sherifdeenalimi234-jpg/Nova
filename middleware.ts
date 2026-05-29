@@ -29,6 +29,11 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Ensure authenticated users don't get stuck on auth callback or login if already have session
+  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
   // Admin protection
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!user) {

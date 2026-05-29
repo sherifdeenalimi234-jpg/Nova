@@ -62,6 +62,11 @@ export default function Home() {
         if (profile?.is_verified_creator || profile?.is_admin) {
           setIsCreator(true);
         }
+
+        // If admin lands here, send them to admin dashboard
+        if (profile?.is_admin) {
+          window.location.href = '/admin';
+        }
       } else {
         setIsAuthenticated(false);
         setIsCreator(false);
