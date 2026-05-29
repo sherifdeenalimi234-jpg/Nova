@@ -41,5 +41,9 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6"
   }
 }

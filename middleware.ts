@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -28,53 +29,105 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError) console.error('Middleware getUser error:', userError.message)
 
-  // Ensure authenticated users don't get stuck on auth callback or login if already have session
-  if (user && request.nextUrl.pathname === '/auth/login') {
-    console.log('User already logged in, redirecting to home.');
+  const pathname = request.nextUrl.pathname;
+
+  console.log(`[Middleware] Path: ${pathname}, User: ${user?.email || 'Guest'}`);
+
+  // 1. Redirect authenticated users away from landing page
+  if (user && pathname === '/') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+    const redirectPath = is_admin ? '/admin' : '/feed';
+
+    console.log(`[Middleware] Authenticated user on landing, redirecting to ${redirectPath}`);
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = redirectPath
     const response = NextResponse.redirect(url)
-    // IMPORTANT: Transfer all headers including cookies to the new response
     supabaseResponse.headers.forEach((value, key) => {
       response.headers.append(key, value)
     })
     return response
   }
 
-  // Admin protection
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    console.log('Checking admin access for:', user?.email);
-    if (!user) {
-      console.log('No user session, redirecting to home.');
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      const response = NextResponse.redirect(url)
-      supabaseResponse.headers.forEach((value, key) => {
-        response.headers.append(key, value)
-      })
-      return response
-    }
+  // 2. Protect Authenticated Routes
+  const protectedRoutes = [
+    '/feed',
+    '/admin',
+    '/projects',
+    '/surveys',
+    '/gallery',
+    '/analytics',
+    '/notifications',
+    '/settings',
+    '/u'
+  ];
 
-    // Check if user is admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-    if (profileError || !profile?.is_admin) {
-      console.error('Admin verification failed:', profileError?.message || 'Not an admin');
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      const response = NextResponse.redirect(url)
-      supabaseResponse.headers.forEach((value, key) => {
-        response.headers.append(key, value)
-      })
-      return response
+  if (isProtectedRoute && !user) {
+    console.log(`[Middleware] Guest accessing protected route ${pathname}, redirecting to /`);
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    const response = NextResponse.redirect(url)
+    supabaseResponse.headers.forEach((value, key) => {
+      response.headers.append(key, value)
+    })
+    return response
+  }
+
+  // 3. Admin-only route protection
+  if (pathname.startsWith('/admin')) {
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+
+      if (!is_admin) {
+        console.log(`[Middleware] Non-admin user ${user.email} accessing /admin, redirecting to /feed`);
+        const url = request.nextUrl.clone()
+        url.pathname = '/feed'
+        const response = NextResponse.redirect(url)
+        supabaseResponse.headers.forEach((value, key) => {
+          response.headers.append(key, value)
+        })
+        return response
+      }
+      console.log(`[Middleware] Admin access granted to ${user.email}`);
     }
-    console.log('Admin access granted.');
+  }
+
+  // 4. Prevent Admin from accessing user feed
+  if (pathname.startsWith('/feed')) {
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+
+      if (is_admin) {
+        console.log(`[Middleware] Admin ${user.email} accessing /feed, redirecting to /admin`);
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin'
+        const response = NextResponse.redirect(url)
+        supabaseResponse.headers.forEach((value, key) => {
+          response.headers.append(key, value)
+        })
+        return response
+      }
+    }
   }
 
   return supabaseResponse
