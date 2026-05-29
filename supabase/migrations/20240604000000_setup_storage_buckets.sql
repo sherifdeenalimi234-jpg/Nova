@@ -11,16 +11,41 @@ ON CONFLICT (id) DO NOTHING;
 -- Dropping existing to ensure clean slate
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated Uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Admins Manage All" ON storage.objects;
+DROP POLICY IF EXISTS "Users Manage Own" ON storage.objects;
 
-CREATE POLICY "Public Access"
+-- Allow public viewing of documents (proofs) for admin verification
+-- Allow users to view their own documents and admins to view everything
+CREATE POLICY "View Documents"
 ON storage.objects FOR SELECT
-USING ( bucket_id = 'documents' );
+USING (
+  bucket_id = 'documents' AND (
+    (auth.uid() = owner) OR
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  )
+);
 
+-- Allow authenticated users to upload their own proof
 CREATE POLICY "Authenticated Uploads"
 ON storage.objects FOR INSERT
 WITH CHECK (
   bucket_id = 'documents' AND
   auth.role() = 'authenticated'
+);
+
+-- Allow admins full control over the documents bucket
+CREATE POLICY "Admins Manage All"
+ON storage.objects FOR ALL
+TO authenticated
+USING (
+  bucket_id = 'documents' AND
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_admin = true
+  )
 );
 
 -- Enable Realtime for core tables
