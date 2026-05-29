@@ -11,7 +11,8 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  RefreshCcw
 } from 'lucide-react';
 import { moderatePremiumRequest } from '@/lib/actions/admin';
 import { cn } from '@/lib/utils';
@@ -138,20 +139,26 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                       <Loader2 size={20} className="animate-spin text-nova-purple" />
                    </div>
                  ) : (
-                   <>
+                   <div className="col-span-2 grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleAction(req.id, 'approved')}
-                      className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-nova-purple/10 text-nova-purple text-[9px] font-black uppercase tracking-widest hover:bg-nova-purple/20 transition-all border border-nova-purple/20"
+                      className="flex items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-nova-cyan/10 text-nova-cyan text-[8px] font-black uppercase tracking-widest hover:bg-nova-cyan/20 transition-all border border-nova-cyan/20 shadow-[0_0_15px_rgba(0,242,255,0.1)]"
                     >
-                        <ShieldCheck size={14} /> Authorize
+                        <ShieldCheck size={12} /> Approve
+                    </button>
+                    <button
+                      onClick={() => handleAction(req.id, 'rejected')}
+                      className="flex items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-white/5 text-white/40 text-[8px] font-black uppercase tracking-widest hover:bg-nova-purple/10 hover:text-nova-purple transition-all border border-white/5"
+                    >
+                        <RefreshCcw size={12} /> Request New
                     </button>
                     <button
                       onClick={() => handleAction(req.id, 'rejected')}
                       className="flex items-center justify-center py-3.5 rounded-2xl bg-white/5 text-white/20 hover:bg-red-500/10 hover:text-red-500 transition-all border border-white/5"
                     >
-                        <XCircle size={16} />
+                        <XCircle size={14} />
                     </button>
-                   </>
+                   </div>
                  )}
               </div>
             </motion.div>
