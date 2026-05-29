@@ -73,7 +73,8 @@ const ActivityFeed = () => {
           </div>
         ) : (
           activities.map((activity, idx) => {
-            const color = getColorByAction(activity.action);
+            const colorClass = getColorByAction(activity.action);
+            const borderColorClass = colorClass.replace('bg-', 'border-');
             return (
               <motion.div
                 key={activity.id}
@@ -83,9 +84,9 @@ const ActivityFeed = () => {
                 className="glass p-4 rounded-2xl flex items-center justify-between border-white/[0.03] hover:bg-white/[0.05] transition-colors group"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl ${color}/10 border border-${color.replace('bg-', 'border-')}/20 flex items-center justify-center relative overflow-hidden`}>
-                    <div className={`absolute inset-0 ${color}/5 animate-pulse`} />
-                    <div className={`w-1.5 h-1.5 rounded-full ${color.replace('bg-', 'bg-')} shadow-[0_0_8px_currentColor]`} />
+                  <div className={`w-10 h-10 rounded-xl ${colorClass}/10 border ${borderColorClass}/20 flex items-center justify-center relative overflow-hidden`}>
+                    <div className={`absolute inset-0 ${colorClass}/5 animate-pulse`} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${colorClass} shadow-[0_0_8px_currentColor]`} />
                   </div>
                   <div>
                     <div className="text-[11px] font-black text-white tracking-wide">{activity.user?.full_name || "SYSTEM NODE"}</div>

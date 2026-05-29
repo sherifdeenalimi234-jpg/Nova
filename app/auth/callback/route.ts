@@ -20,24 +20,31 @@ export async function GET(request: Request) {
       if (user.email === adminEmail) {
         await supabase
           .from('profiles')
-          .update({
+          .upsert({
+            id: user.id,
             is_admin: true,
             is_verified_creator: true,
             full_name: user.user_metadata.full_name || user.email?.split('@')[0],
-            avatar_url: user.user_metadata.avatar_url
+            avatar_url: user.user_metadata.avatar_url,
+            updated_at: new Date().toISOString()
           })
-          .eq('id', user.id)
+      }
+
+      // Explicitly redirect admin to mission control
+      let redirectUrl = next
+      if (user.email === adminEmail) {
+        redirectUrl = '/admin'
       }
 
       const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
+
       if (isLocalEnv) {
-        // we can be sure that there is no proxy
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${redirectUrl}`)
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        return NextResponse.redirect(`https://${forwardedHost}${redirectUrl}`)
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${redirectUrl}`)
       }
     }
   }
