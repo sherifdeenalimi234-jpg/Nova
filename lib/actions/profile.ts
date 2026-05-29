@@ -13,26 +13,37 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
     // Log the initiation
     console.log(`[Profile] Initiating creator access request for user ${user.id}`);
 
-    const { error: requestError } = await supabase
+    console.log("[Profile] Data to insert:", {
+      user_id: user.id,
+      payment_reference: paymentRef,
+      verification_doc_url: proofUrl,
+      payment_note: note,
+    });
+
+    const { data: insertData, error: requestError } = await supabase
       .from('premium_requests')
       .insert({
         user_id: user.id,
         payment_reference: paymentRef,
         verification_doc_url: proofUrl,
-        proof_url: proofUrl, // Sync both for compatibility
+        proof_url: proofUrl,
         payment_note: note,
         status: 'pending',
         approval_status: 'pending',
         verification_status: 'under_review'
-      });
+      })
+      .select();
+
+    console.log("[Profile] Insert Result:", { insertData, requestError });
 
     if (requestError) {
       console.error("[Profile] Error inserting premium request:", requestError);
-      return { error: `Database submission failed: ${requestError.message}` };
+      return { error: `Database submission failed: ${requestError.message} (Code: ${requestError.code})` };
     }
 
     // Also update the profile status for immediate visibility
-    const { error: profileError } = await supabase
+    console.log("[Profile] Updating profile for user:", user.id);
+    const { data: updateData, error: profileError } = await supabase
       .from('profiles')
       .update({
         creator_status: 'pending',
@@ -40,7 +51,10 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
         verification_status: 'pending',
         verification_submitted_at: new Date().toISOString()
       })
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select();
+
+    console.log("[Profile] Profile Update Result:", { updateData, profileError });
 
     if (profileError) {
       console.error("[Profile] Error updating profile status:", profileError);
