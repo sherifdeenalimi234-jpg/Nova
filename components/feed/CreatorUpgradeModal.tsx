@@ -31,6 +31,7 @@ type Step = "pitch" | "payment" | "proof" | "success";
 export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUpgradeModalProps) {
   const [step, setStep] = useState<Step>("pitch");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
@@ -58,20 +59,27 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
 
   const handleSubmit = async () => {
     if (!paymentRef) {
-      alert("Please enter a payment reference or your name.");
+      setError("Please enter a payment reference or your name.");
       return;
     }
     setLoading(true);
+    setError(null);
     try {
       let proofUrl = "";
       if (proofFile) {
-        proofUrl = await uploadFile(proofFile, "documents");
+        try {
+          proofUrl = await uploadFile(proofFile, "documents");
+        } catch (uploadErr: any) {
+          console.error("Upload error:", uploadErr);
+          throw new Error(uploadErr.message || "Failed to upload proof. Please try again.");
+        }
       }
-      const { error } = await requestCreatorAccess(paymentRef, proofUrl, note);
-      if (error) throw error;
+      const { error: requestErr } = await requestCreatorAccess(paymentRef, proofUrl, note);
+      if (requestErr) throw requestErr;
       setStep("success");
     } catch (err: any) {
-      alert("Submission failed: " + err.message);
+      console.error("Submission error:", err);
+      setError(err.message || "Submission sequence failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -309,12 +317,35 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
                       </div>
                     </div>
 
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 mb-2"
+                      >
+                        <AlertCircle size={14} className="text-red-500 shrink-0" />
+                        <p className="text-[9px] font-black uppercase tracking-widest text-red-500/80 leading-relaxed">
+                          {error}
+                        </p>
+                      </motion.div>
+                    )}
+
                     <button
                       disabled={loading || !proofFile || !paymentRef}
                       onClick={handleSubmit}
                       className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? <Loader2 size={16} className="animate-spin" /> : <>Transmit Request <ChevronRight size={14} /></>}
+                      {loading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          {error ? "Retry Transmission" : "Transmit Request"}
+                          <ChevronRight size={14} />
+                        </>
+                      )}
                     </button>
                   </motion.div>
                 )}
