@@ -52,6 +52,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     if (!adminProfile?.is_admin) return { error: "Unauthorized access." };
 
     // 1. Update the request status
+    console.log(`[Admin] Updating premium request ${requestId} to ${status}...`);
     const { data: request, error: requestError } = await supabase
       .from('premium_requests')
       .update({
@@ -66,23 +67,32 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .single();
 
     if (requestError) {
-      console.error("[Admin] Error updating premium request:", requestError);
+      console.error("[Admin] Error updating premium request:", {
+        message: requestError.message,
+        code: requestError.code,
+        details: requestError.details
+      });
       return { error: `Verification update failed: ${requestError.message}` };
     }
 
+    console.log("[Admin] Premium request updated successfully:", request);
+
     // 2. If approved, upgrade the user's profile to verified creator
     if (status === 'approved') {
+      console.log(`[Admin] Approving creator: ${request.user_id}`);
+      const profileUpdate = {
+        is_verified_creator: true,
+        creator_verified: true,
+        creator_status: 'approved',
+        payment_status: 'verified',
+        verification_status: 'verified',
+        creator_approved_at: new Date().toISOString(),
+        creator_since: new Date().toISOString()
+      };
+
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          is_verified_creator: true,
-          creator_verified: true,
-          creator_status: 'approved',
-          payment_status: 'verified',
-          verification_status: 'verified',
-          creator_approved_at: new Date().toISOString(),
-          creator_since: new Date().toISOString()
-        })
+        .update(profileUpdate)
         .eq('id', request.user_id);
 
       if (profileError) {
@@ -91,16 +101,19 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       }
 
       // 3. Ensure creator_profiles record exists
+      console.log("[Admin] Ensuring creator_profiles entry exists...");
       const { error: creatorProfileError } = await supabase
         .from('creator_profiles')
         .upsert({ id: request.user_id });
 
       if (creatorProfileError) {
         console.error('[Admin] Error creating creator profile:', creatorProfileError);
+        // We don't fail the whole process for this optional table
       }
 
       console.log(`[Admin] Successfully approved creator request ${requestId} for user ${request.user_id}`);
     } else if (status === 'rejected') {
+      console.log(`[Admin] Rejecting creator: ${request.user_id}`);
       const { error: profileError } = await supabase
         .from('profiles')
         .update({

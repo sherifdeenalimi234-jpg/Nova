@@ -72,24 +72,30 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
         console.log("[Modal] Uploading file to 'creator-proofs'...");
         try {
           proofUrl = await uploadFile(proofFile, "creator-proofs");
-          console.log("[Modal] Upload successful. URL:", proofUrl);
+          console.log("[Modal] Upload success. URL:", proofUrl);
         } catch (uploadErr: any) {
-          console.error("[Modal] Upload failure:", uploadErr);
-          throw new Error(`Upload failed: ${uploadErr.message || "Please check your connection and try again."}`);
+          console.error("[Modal] Upload step failed:", uploadErr);
+          throw new Error(uploadErr.message || "Failed to upload proof image.");
         }
       }
 
-      console.log("[Modal] Transmitting database request...");
+      if (proofFile && !proofUrl) {
+        throw new Error("File upload failed to return a valid URL.");
+      }
+
+      console.log("[Modal] Transmitting database request via server action...");
       const result = await requestCreatorAccess(paymentRef, proofUrl, note);
-      console.log("[Modal] Transmission result:", result);
+      console.log("[Modal] Server action response:", result);
 
       if (result.error) {
+        console.error("[Modal] Server action returned error:", result.error);
         throw new Error(result.error);
       }
 
+      console.log("[Modal] Submission sequence completed successfully.");
       setStep("success");
     } catch (err: any) {
-      console.error("[Modal] Submission sequence failure:", err);
+      console.error("[Modal] FATAL Submission failure:", err);
       setError(err.message || "Submission sequence failed. Please try again.");
     } finally {
       setLoading(false);

@@ -29,6 +29,7 @@ interface PremiumRequest {
   payment_reference: string;
   created_at: string;
   verification_doc_url?: string;
+  proof_url?: string;
   payment_note?: string;
   category?: string;
   approved_at?: string;
@@ -124,12 +125,12 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
 
               <div className="grid grid-cols-2 gap-3 relative z-10">
                  <button
-                   onClick={() => setSelectedDoc(req.verification_doc_url || '#')}
+                   onClick={() => setSelectedDoc(req.verification_doc_url || req.proof_url || '#')}
                    className="col-span-2 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-[9px] font-black uppercase tracking-widest hover:text-nova-cyan hover:border-nova-cyan/20 transition-all mb-2"
                  >
                     <div className="flex items-center gap-2">
                        <FileText size={14} className="text-nova-cyan" />
-                       Credentials Terminal
+                       View Payment Proof
                     </div>
                     <ChevronRight size={14} />
                  </button>
@@ -199,15 +200,22 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
 
                    {selectedDoc && selectedDoc !== '#' ? (
                       <div className="w-full h-full flex flex-col items-center gap-8">
-                         <div className="relative w-full max-w-2xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                            <img src={selectedDoc} alt="Payment Proof" className="w-full h-full object-contain bg-black" />
+                         <div className="relative w-full max-w-2xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-black/40">
+                            <img
+                              src={selectedDoc}
+                              alt="Payment Proof"
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/0a0a0b/00f2ff?text=Invalid+Document+URL';
+                              }}
+                            />
                          </div>
 
-                         {filteredRequests.find(r => r.verification_doc_url === selectedDoc)?.payment_note && (
+                         {filteredRequests.find(r => r.verification_doc_url === selectedDoc || r.proof_url === selectedDoc)?.payment_note && (
                             <div className="max-w-xl w-full p-6 rounded-[2rem] bg-white/[0.02] border border-white/5">
                                <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-3">Applicant Note</p>
                                <p className="text-sm text-white/60 leading-relaxed italic">
-                                  "{filteredRequests.find(r => r.verification_doc_url === selectedDoc)?.payment_note}"
+                                  "{filteredRequests.find(r => r.verification_doc_url === selectedDoc || r.proof_url === selectedDoc)?.payment_note}"
                                </p>
                             </div>
                          )}
