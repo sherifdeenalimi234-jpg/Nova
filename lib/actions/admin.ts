@@ -68,8 +68,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     // 3. Ensure creator_profiles record exists
     const { error: creatorProfileError } = await supabase
       .from('creator_profiles')
-      .upsert({ id: request.user_id })
-      .eq('id', request.user_id);
+      .upsert({ id: request.user_id });
 
     if (creatorProfileError) console.error('Error creating creator profile:', creatorProfileError);
   } else if (status === 'rejected') {

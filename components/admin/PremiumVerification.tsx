@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   XCircle,
@@ -35,12 +36,14 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);
     const { error } = await moderatePremiumRequest(id, status);
     if (!error) {
       setRequests(requests.filter(r => r.id !== id));
+      router.refresh();
     } else {
       alert("Verification sequence failed: " + (error as any).message);
     }
