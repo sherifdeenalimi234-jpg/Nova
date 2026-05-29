@@ -4,38 +4,57 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function requestCreatorAccess(paymentRef: string, proofUrl?: string, note?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Authentication required." };
+    if (!user) return { error: "Authentication required." };
 
-  const { error: requestError } = await supabase
-    .from('premium_requests')
-    .insert({
-      user_id: user.id,
-      payment_reference: paymentRef,
-      verification_doc_url: proofUrl,
-      payment_note: note,
-      status: 'pending'
-    });
+    // Log the initiation
+    console.log(`[Profile] Initiating creator access request for user ${user.id}`);
 
-  if (requestError) return { error: requestError };
+    const { error: requestError } = await supabase
+      .from('premium_requests')
+      .insert({
+        user_id: user.id,
+        payment_reference: paymentRef,
+        verification_doc_url: proofUrl,
+        proof_url: proofUrl, // Sync both for compatibility
+        payment_note: note,
+        status: 'pending',
+        approval_status: 'pending',
+        verification_status: 'under_review'
+      });
 
-  // Also update the profile status for immediate visibility
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({
-      creator_status: 'pending',
-      payment_status: 'under_review'
-    })
-    .eq('id', user.id);
+    if (requestError) {
+      console.error("[Profile] Error inserting premium request:", requestError);
+      return { error: `Database submission failed: ${requestError.message}` };
+    }
 
-  if (!profileError) {
+    // Also update the profile status for immediate visibility
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        creator_status: 'pending',
+        payment_status: 'under_review',
+        verification_status: 'pending',
+        verification_submitted_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      console.error("[Profile] Error updating profile status:", profileError);
+      // We don't return here because the request was already inserted
+    }
+
     revalidatePath('/feed');
     revalidatePath('/settings/profile');
-  }
 
-  return { error: profileError };
+    return { error: null };
+  } catch (err: any) {
+    console.error("[Profile] Unexpected error in requestCreatorAccess:", err);
+    return { error: "An unexpected system error occurred. Our engineers have been notified." };
+  }
 }
 
 export async function updateProfile(data: {
