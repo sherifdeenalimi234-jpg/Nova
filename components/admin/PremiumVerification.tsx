@@ -27,6 +27,7 @@ interface PremiumRequest {
   created_at: string;
   verification_doc_url?: string;
   category?: string;
+  approved_at?: string;
 }
 
 export default function PremiumVerification({ initialRequests = [] }: { initialRequests?: PremiumRequest[] }) {

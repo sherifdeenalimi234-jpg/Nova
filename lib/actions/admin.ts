@@ -41,7 +41,10 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
   // 1. Update the request status
   const { data: request, error: requestError } = await supabase
     .from('premium_requests')
-    .update({ status })
+    .update({
+      status,
+      approved_at: status === 'approved' ? new Date().toISOString() : null
+    })
     .eq('id', requestId)
     .select()
     .single();
@@ -55,7 +58,8 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .update({
         is_verified_creator: true,
         creator_status: 'approved',
-        creator_approved_at: new Date().toISOString()
+        creator_approved_at: new Date().toISOString(),
+        approved: true
       })
       .eq('id', request.user_id);
 
@@ -73,7 +77,8 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .from('profiles')
       .update({
         is_verified_creator: false,
-        creator_status: 'rejected'
+        creator_status: 'rejected',
+        approved: false
       })
       .eq('id', request.user_id);
 
