@@ -22,7 +22,10 @@ export async function requestCreatorAccess(paymentRef: string) {
   // Also update the profile status for immediate visibility
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ creator_status: 'pending' })
+    .update({
+      creator_status: 'pending',
+      approved: false
+    })
     .eq('id', user.id);
 
   if (!profileError) {

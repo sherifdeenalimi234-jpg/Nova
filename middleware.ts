@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
     if (profile) return profile;
     const { data } = await supabase
       .from('profiles')
-      .select('is_admin, is_verified_creator')
+      .select('is_admin, is_verified_creator, approved')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
   const isVerifiedCreator = async () => {
     if (!user) return false;
     const p = await getCachedProfile();
-    return p?.is_verified_creator;
+    return p?.is_verified_creator || p?.approved;
   }
 
   // 1. Redirect authenticated users away from landing page
