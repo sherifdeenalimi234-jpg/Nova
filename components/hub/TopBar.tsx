@@ -16,16 +16,24 @@ const TopBar: React.FC<TopBarProps> = ({ onLogin, isAuthenticated }) => {
 
   const handleSignIn = async () => {
     setIsLoggingIn(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    if (onLogin) {
+      try {
+        await onLogin();
+      } catch (err) {
+        setIsLoggingIn(false);
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-    if (error) {
-      console.error('Error logging in:', error.message);
-      setIsLoggingIn(false);
+      if (error) {
+        console.error('Error logging in:', error.message);
+        setIsLoggingIn(false);
+      }
     }
   };
 

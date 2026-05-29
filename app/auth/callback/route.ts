@@ -10,15 +10,23 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error && session?.user) {
-      const user = session.user
+    if (error) {
+      console.error('Auth callback exchange error:', error.message);
+      return NextResponse.redirect(new URL(`/auth/auth-code-error?error=${encodeURIComponent(error.message)}`, request.url))
+    }
+
+    if (data?.user) {
+      const user = data.user
       const adminEmail = 'sherifdeenalimititilope@gmail.com'
 
+      console.log('User authenticated:', user.email);
+
       // Automatically assign admin and creator privileges to the specified email
-      if (user.email === adminEmail) {
-        await supabase
+      if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
+        console.log('Admin user detected, updating profile...');
+        const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             id: user.id,
@@ -28,27 +36,36 @@ export async function GET(request: Request) {
             avatar_url: user.user_metadata.avatar_url,
             updated_at: new Date().toISOString()
           })
+
+        if (profileError) {
+          console.error('Failed to update admin privileges:', profileError.message)
+        }
+      } else {
+        // Ensure standard profile exists
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            full_name: user.user_metadata.full_name || user.email?.split('@')[0],
+            avatar_url: user.user_metadata.avatar_url,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' })
       }
 
       // Explicitly redirect admin to mission control
       let redirectUrl = next
-      if (user.email === adminEmail) {
+      if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
         redirectUrl = '/admin'
       }
 
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
+      console.log('Redirecting to:', redirectUrl);
 
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${redirectUrl}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${redirectUrl}`)
-      } else {
-        return NextResponse.redirect(`${origin}${redirectUrl}`)
-      }
+      // Use request.nextUrl.origin for safer redirection
+      const origin = new URL(request.url).origin;
+      return NextResponse.redirect(`${origin}${redirectUrl}`)
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(new URL('/auth/auth-code-error', request.url))
 }
