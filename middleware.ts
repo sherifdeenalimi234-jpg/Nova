@@ -34,15 +34,29 @@ export async function middleware(request: NextRequest) {
 
   console.log(`[Middleware] Path: ${pathname}, User: ${user?.email || 'Guest'}`);
 
-  // 1. Redirect authenticated users away from landing page
-  if (user && pathname === '/') {
-    const { data: profile } = await supabase
+  // Cache profile check to avoid multiple lookups in one request
+  let profile: any = null;
+  const getCachedProfile = async () => {
+    if (!user) return null;
+    if (profile) return profile;
+    const { data } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single();
+    profile = data;
+    return profile;
+  };
 
-    const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+  const isAdminUser = async () => {
+    if (!user) return false;
+    const p = await getCachedProfile();
+    return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || p?.is_admin;
+  }
+
+  // 1. Redirect authenticated users away from landing page
+  if (user && pathname === '/') {
+    const is_admin = await isAdminUser();
     const redirectPath = is_admin ? '/admin' : '/feed';
 
     console.log(`[Middleware] Authenticated user on landing, redirecting to ${redirectPath}`);
@@ -84,13 +98,7 @@ export async function middleware(request: NextRequest) {
   // 3. Admin-only route protection
   if (pathname.startsWith('/admin')) {
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+      const is_admin = await isAdminUser();
 
       if (!is_admin) {
         console.log(`[Middleware] Non-admin user ${user.email} accessing /admin, redirecting to /feed`);
@@ -106,19 +114,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 4. Prevent Admin from accessing user feed
-  if (pathname.startsWith('/feed')) {
+  // 4. Prevent Admin from accessing user feed & tools
+  const creatorSystemRoutes = ['/feed', '/creators', '/profile'];
+  if (creatorSystemRoutes.some(route => pathname.startsWith(route))) {
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      const is_admin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin;
+      const is_admin = await isAdminUser();
 
       if (is_admin) {
-        console.log(`[Middleware] Admin ${user.email} accessing /feed, redirecting to /admin`);
+        console.log(`[Middleware] Admin ${user.email} accessing creator system ${pathname}, redirecting to /admin`);
         const url = request.nextUrl.clone()
         url.pathname = '/admin'
         const response = NextResponse.redirect(url)
