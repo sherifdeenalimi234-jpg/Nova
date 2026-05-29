@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { User, Save, Loader2, Globe, Info, Camera, ShieldCheck, Zap } from 'lucide-react';
-import { requestCreatorAccess } from '@/lib/actions/profile';
+import { User, Save, Loader2, Globe, Info, Camera, Zap, ChevronRight } from 'lucide-react';
 import { uploadFile } from '@/lib/supabase/storage';
+import CreatorUpgradeModal from '@/components/feed/CreatorUpgradeModal';
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(true);
@@ -13,9 +13,7 @@ export default function ProfileSettings() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [username, setUsername] = useState('');
-  const [paymentRef, setPaymentRef] = useState('');
-  const [requesting, setRequesting] = useState(false);
-  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const supabase = createClient();
 
@@ -34,37 +32,12 @@ export default function ProfileSettings() {
           setFullName(data.full_name || '');
           setBio(data.bio || '');
           setUsername(data.custom_url || '');
-
-          // Check for pending requests
-          const { data: requests } = await supabase
-            .from('premium_requests')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('status', 'pending');
-
-          if (requests && requests.length > 0) {
-            setHasPendingRequest(true);
-          }
         }
       }
       setLoading(false);
     }
     fetchProfile();
   }, []);
-
-  const handleRequestAccess = async () => {
-    if (!paymentRef) return alert("Please provide a payment reference.");
-    setRequesting(true);
-    const { error } = await requestCreatorAccess(paymentRef);
-    if (!error) {
-      alert("Creator access request submitted. Our admins will verify your payment.");
-      setHasPendingRequest(true);
-    } else {
-      const errorMessage = typeof error === 'string' ? error : error.message;
-      alert("Request failed: " + errorMessage);
-    }
-    setRequesting(false);
-  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -222,40 +195,33 @@ export default function ProfileSettings() {
                     </p>
                  </div>
 
-                 {hasPendingRequest ? (
-                    <div className="p-6 rounded-2xl bg-nova-purple/5 border border-nova-purple/20 text-center">
-                       <ShieldCheck className="mx-auto mb-3 text-nova-purple animate-pulse" size={32} />
-                       <h3 className="text-sm font-bold uppercase tracking-widest mb-1 text-white">Verification in Progress</h3>
-                       <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Our admins are validating your credentials...</p>
+                 {profile?.creator_status === 'pending' ? (
+                    <div className="p-8 rounded-3xl bg-nova-cyan/5 border border-nova-cyan/20 text-center">
+                       <div className="w-12 h-12 rounded-2xl bg-black border border-nova-cyan/20 flex items-center justify-center mx-auto mb-4">
+                          <Loader2 size={24} className="text-nova-cyan animate-spin" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase tracking-widest mb-1 text-white">Verification Pending</h3>
+                       <p className="text-[8px] text-white/40 uppercase tracking-[0.3em]">Protocol active • Awaiting authentication</p>
                     </div>
                  ) : (
-                    <div className="space-y-4 p-6 rounded-2xl bg-white/5 border border-white/10">
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
-                             Payment Reference / Transaction ID
-                          </label>
-                          <input
-                             type="text"
-                             value={paymentRef}
-                             onChange={(e) => setPaymentRef(e.target.value)}
-                             className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 focus:border-nova-purple/50 focus:outline-none text-sm transition-all"
-                             placeholder="Enter manually processed ID"
-                          />
-                       </div>
-                       <button
-                          onClick={handleRequestAccess}
-                          disabled={requesting}
-                          className="w-full py-3 rounded-xl bg-nova-purple/20 border border-nova-purple/30 text-nova-purple text-[10px] font-black uppercase tracking-[0.3em] hover:bg-nova-purple/30 transition-all flex items-center justify-center gap-2"
-                       >
-                          {requesting ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
-                          Submit for Verification
-                       </button>
-                    </div>
+                    <button
+                       onClick={() => setIsUpgradeModalOpen(true)}
+                       className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] hover:bg-nova-cyan transition-all flex items-center justify-center gap-3"
+                    >
+                       {profile?.creator_status === 'rejected' ? 'Re-apply for Access' : 'Begin Application'}
+                       <ChevronRight size={14} />
+                    </button>
                  )}
               </div>
            )}
         </div>
       </div>
+
+      <CreatorUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        user={profile}
+      />
     </div>
   );
 }
