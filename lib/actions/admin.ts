@@ -71,8 +71,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
         is_verified_creator: true,
         creator_status: 'approved',
         payment_status: 'verified',
-        creator_approved_at: new Date().toISOString(),
-        approved: true
+        creator_approved_at: new Date().toISOString()
       })
       .eq('id', request.user_id);
 
@@ -90,8 +89,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .update({
         is_verified_creator: false,
         creator_status: 'rejected',
-        payment_status: 'rejected',
-        approved: false
+        payment_status: 'rejected'
       })
       .eq('id', request.user_id);
 

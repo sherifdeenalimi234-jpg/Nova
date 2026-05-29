@@ -26,8 +26,7 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
     .from('profiles')
     .update({
       creator_status: 'pending',
-      payment_status: 'under_review',
-      approved: false
+      payment_status: 'under_review'
     })
     .eq('id', user.id);
 
