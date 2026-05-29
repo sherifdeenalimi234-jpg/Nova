@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Shield, ArrowRight, Rocket, Briefcase, FileText, LayoutDashboard } from "lucide-react";
+import { User, Shield, ArrowRight, Rocket, Briefcase, FileText, LayoutDashboard, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { requestCreatorAccess } from "@/lib/actions/profile";
 
 export default function ProfileTab() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -119,8 +122,17 @@ export default function ProfileTab() {
                <p className="text-white/30 text-xs leading-relaxed mb-8">
                   Unlock professional portfolio tools, research logs, survey systems, and ecosystem-wide visibility.
                </p>
-               <button className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all">
-                  Begin Application
+               <button
+                 disabled={requesting || requestSent}
+                 onClick={async () => {
+                    setRequesting(true);
+                    const { error } = await requestCreatorAccess("MANUAL_APP_" + profile.id);
+                    if (!error) setRequestSent(true);
+                    setRequesting(false);
+                 }}
+                 className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                  {requesting ? <Loader2 size={14} className="animate-spin" /> : requestSent ? "Request Transmitted" : "Begin Application"}
                </button>
             </div>
          )}

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { updateProfile } from '@/lib/actions/profile';
+import { createClient } from '@/lib/supabase/client';
 import {
   User,
   Shield,
@@ -17,12 +19,55 @@ import {
 
 export default function CreatorSettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [bio, setBio] = useState('');
   const [collaboration, setCollaboration] = useState(true);
   const [contactVisibility, setContactVisibility] = useState({
      email: true,
      phone: false,
      socials: true
   });
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data: creator } = await supabase.from('creator_profiles').select('*').eq('id', user.id).single();
+
+      if (profile) {
+        setFullName(profile.full_name || '');
+      }
+      if (creator) {
+        setBio(creator.long_bio || '');
+        setCollaboration(creator.is_available_for_collaboration ?? true);
+        if (creator.contact_visibility) {
+          setContactVisibility(creator.contact_visibility);
+        }
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleUpdateProfile = async () => {
+    setLoading(true);
+    await updateProfile({
+      full_name: fullName,
+      long_bio: bio
+    });
+    setLoading(false);
+  };
+
+  const handleUpdateVisibility = async (newCollab: boolean, newContact: any) => {
+    await updateProfile({
+      is_available_for_collaboration: newCollab,
+      contact_visibility: newContact
+    });
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-20">
@@ -60,18 +105,33 @@ export default function CreatorSettingsPage() {
                      </div>
                      <div className="flex-1 space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Display Identity</label>
-                        <input type="text" placeholder="Full Name" className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-nova-cyan/30" />
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-nova-cyan/30"
+                        />
                      </div>
                   </div>
 
                   <div className="space-y-2">
                      <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Professional Abstract (Bio)</label>
-                     <textarea rows={4} className="w-full bg-black/40 border border-white/5 rounded-[2rem] px-6 py-6 text-sm focus:outline-none focus:border-nova-cyan/30 resize-none" />
+                     <textarea
+                       rows={4}
+                       value={bio}
+                       onChange={(e) => setBio(e.target.value)}
+                       className="w-full bg-black/40 border border-white/5 rounded-[2rem] px-6 py-6 text-sm focus:outline-none focus:border-nova-cyan/30 resize-none"
+                     />
                   </div>
 
                   <div className="pt-6 border-t border-white/5 flex justify-end">
-                     <button className="px-8 py-3 rounded-xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all">
-                        Update Identity
+                     <button
+                       onClick={handleUpdateProfile}
+                       disabled={loading}
+                       className="px-8 py-3 rounded-xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all disabled:opacity-50"
+                     >
+                        {loading ? 'Processing...' : 'Update Identity'}
                      </button>
                   </div>
                </section>
@@ -91,7 +151,11 @@ export default function CreatorSettingsPage() {
                            </div>
                         </div>
                         <button
-                          onClick={() => setCollaboration(!collaboration)}
+                          onClick={() => {
+                            const next = !collaboration;
+                            setCollaboration(next);
+                            handleUpdateVisibility(next, contactVisibility);
+                          }}
                           className={`w-12 h-6 rounded-full p-1 transition-all flex ${collaboration ? 'bg-nova-green justify-end' : 'bg-white/10 justify-start'}`}
                         >
                            <div className="w-4 h-4 rounded-full bg-black" />
@@ -112,7 +176,11 @@ export default function CreatorSettingsPage() {
                                     <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{item.label}</span>
                                  </div>
                                  <button
-                                   onClick={() => setContactVisibility(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof prev] }))}
+                                   onClick={() => {
+                                      const next = { ...contactVisibility, [item.id]: !contactVisibility[item.id as keyof typeof contactVisibility] };
+                                      setContactVisibility(next);
+                                      handleUpdateVisibility(collaboration, next);
+                                   }}
                                    className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${
                                       contactVisibility[item.id as keyof typeof contactVisibility] ? 'bg-nova-cyan/10 text-nova-cyan border border-nova-cyan/20' : 'bg-white/5 text-white/20 border border-white/5'
                                    }`}
