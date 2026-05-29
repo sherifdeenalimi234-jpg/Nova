@@ -7,34 +7,42 @@ interface ProfileSlidesProps {
   onComplete: () => void;
 }
 
-const profiles = [
-  {
-    id: 1,
-    name: "Dr. Elena Vance",
-    role: "Quantum Computing Lead",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1000",
-    quote: "Innovation is not just about technology, it's about human potential."
-  },
-  {
-    id: 2,
-    name: "Marcus Chen",
-    role: "Architectural Futurist",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1000",
-    quote: "We build the spaces where the future will live and breathe."
-  },
-  {
-    id: 3,
-    name: "Sarah Jenkins",
-    role: "AI Ethics Researcher",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=1000",
-    quote: "Ensuring intelligence remains a force for global equity."
-  }
-];
+import { createClient } from "@/lib/supabase/client";
 
 const ProfileSlides: React.FC<ProfileSlidesProps> = ({ onComplete }) => {
   const [index, setIndex] = useState(0);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function fetchProfiles() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_verified_creator', true)
+        .limit(5);
+
+      if (data && data.length > 0) {
+        setProfiles(data);
+      } else {
+        // Fallback if no creators exist yet
+        setProfiles([
+          {
+            full_name: "System Initializing",
+            bio: "Waiting for first innovation signals...",
+            avatar_url: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000"
+          }
+        ]);
+      }
+      setLoading(false);
+    }
+    fetchProfiles();
+  }, []);
+
+  useEffect(() => {
+    if (loading || profiles.length === 0) return;
+
     const timer = setTimeout(() => {
       if (index < profiles.length - 1) {
         setIndex(index + 1);
@@ -44,7 +52,9 @@ const ProfileSlides: React.FC<ProfileSlidesProps> = ({ onComplete }) => {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [index, onComplete]);
+  }, [index, onComplete, profiles, loading]);
+
+  if (loading) return <div className="h-screen w-screen bg-black" />;
 
   return (
     <div className="relative h-screen w-screen bg-black overflow-hidden flex items-center justify-center">
@@ -60,7 +70,10 @@ const ProfileSlides: React.FC<ProfileSlidesProps> = ({ onComplete }) => {
           {/* Background Image with Overlay */}
           <div
             className="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-[3000ms] ease-linear"
-            style={{ backgroundImage: `url(${profiles[index].image})`, transform: 'scale(1.1)' }}
+            style={{
+              backgroundImage: `url(${profiles[index]?.avatar_url || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000"})`,
+              transform: 'scale(1.1)'
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
@@ -72,11 +85,13 @@ const ProfileSlides: React.FC<ProfileSlidesProps> = ({ onComplete }) => {
               transition={{ delay: 0.5, duration: 0.8 }}
             >
               <h2 className="text-nova-cyan text-xs tracking-[0.3em] uppercase mb-2">Featured Member</h2>
-              <h3 className="text-4xl md:text-5xl font-bold text-white mb-1">{profiles[index].name}</h3>
-              <p className="text-lg text-white/60 font-light mb-8 italic tracking-wide">"{profiles[index].quote}"</p>
+              <h3 className="text-4xl md:text-5xl font-bold text-white mb-1">{profiles[index]?.full_name}</h3>
+              <p className="text-lg text-white/60 font-light mb-8 italic tracking-wide">
+                "{profiles[index]?.bio || "Pioneering the future of the NOVA community."}"
+              </p>
 
               <div className="inline-block px-4 py-1 border border-white/20 rounded-full text-[10px] uppercase tracking-widest text-white/40">
-                {profiles[index].role}
+                Verified Creator
               </div>
             </motion.div>
           </div>

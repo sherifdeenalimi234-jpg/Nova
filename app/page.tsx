@@ -26,13 +26,13 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("explore"); // Default to explore in feed
 
   useEffect(() => {
-    const checkUser = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+    const supabase = createClient();
 
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setIsAuthenticated(true);
-        setPhase("hub"); // Skip intro if already logged in
+        setPhase("hub");
 
         const { data: profile } = await supabase
           .from('profiles')
@@ -45,7 +45,32 @@ export default function Home() {
         }
       }
     };
-    checkUser();
+
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setPhase("hub");
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_verified_creator, is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.is_verified_creator || profile?.is_admin) {
+          setIsCreator(true);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setIsCreator(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const nextPhase = () => {
@@ -54,17 +79,21 @@ export default function Home() {
   };
 
   const handleLogin = async () => {
-    // This is called when the sign-in button is clicked, but since it's OAuth redirect,
-    // the actual "login" happens after redirect back.
-    // However, if we implement a modal or similar later, this is useful.
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
-    if (error) console.error(error);
+    if (error) {
+      console.error('Login error:', error.message);
+      alert('Authentication failed. Please try again.');
+    }
   };
 
   return (

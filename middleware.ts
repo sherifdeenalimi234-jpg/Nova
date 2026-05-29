@@ -36,13 +36,13 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user is admin
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_admin) {
+    if (error || !profile?.is_admin) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }

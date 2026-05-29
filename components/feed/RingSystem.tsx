@@ -4,18 +4,39 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Share2, Info, ChevronRight } from "lucide-react";
 
-const signals = [
-  { id: 1, label: "Research Updates", color: "cyan", hex: "#00f2ff", icon: "RU", content: "Quantum stability achieved at room temperature in the Nova Lab node." },
-  { id: 2, label: "Available Surveys", color: "purple", hex: "#a855f7", icon: "AS", content: "New ecosystem participation survey is live. Share your innovation roadmap." },
-  { id: 3, label: "Active Projects", color: "green", hex: "#22c55e", icon: "AP", content: "Project Phoenix has reached the 'Incubating' phase with 42 active contributors." },
-  { id: 4, label: "Innovation Signals", color: "cyan", hex: "#00f2ff", icon: "IS", content: "Deep space communication protocol Alpha-7 detected new signal patterns." },
-  { id: 5, label: "Community Alerts", color: "orange", hex: "#f97316", icon: "CA", content: "Upcoming Global Summit: Virtual participation nodes opening in 24 hours." },
-  { id: 6, label: "New Discoveries", color: "cyan", hex: "#00f2ff", icon: "ND", content: "Synthesized bio-conductive materials show 400% efficiency increase." },
-  { id: 7, label: "Ecosystem Highlights", color: "white", hex: "#ffffff", icon: "EH", content: "Celebrating 100 successful project launches in the NOVA community this quarter." },
-];
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const RingSystem = () => {
-  const [selectedSignal, setSelectedSignal] = useState<typeof signals[0] | null>(null);
+  const [signals, setSignals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSignal, setSelectedSignal] = useState<any | null>(null);
+
+  useEffect(() => {
+    async function fetchSignals() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) {
+        const mappedSignals = data.map((post: any) => ({
+          id: post.id,
+          label: post.post_type.toUpperCase().replace('_', ' '),
+          color: post.post_type === 'survey' ? 'purple' : post.post_type === 'project' ? 'green' : 'cyan',
+          icon: post.title.substring(0, 2).toUpperCase(),
+          content: post.content,
+          title: post.title
+        }));
+        setSignals(mappedSignals);
+      }
+      setLoading(false);
+    }
+    fetchSignals();
+  }, []);
 
   const getColorClass = (color: string) => {
     switch (color) {
@@ -38,6 +59,18 @@ const RingSystem = () => {
       default: return "";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="w-full py-10 flex gap-6 px-6 overflow-hidden">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="w-20 h-20 rounded-full border-2 border-white/5 animate-pulse shrink-0" />
+        ))}
+      </div>
+    );
+  }
+
+  if (signals.length === 0) return null;
 
   return (
     <>
@@ -98,8 +131,8 @@ const RingSystem = () => {
                 transition={{ duration: 0.8, ease: "easeOut" }}
               >
                 <h2 className="text-4xl font-black tracking-tight mb-8 leading-tight">
-                  <span className={`text-${selectedSignal.color === 'white' ? 'white' : 'nova-' + selectedSignal.color} mr-4`}>//</span>
-                  RESEARCH CAPSULE
+                  <span className={`text-nova-${selectedSignal.color} mr-4`}>//</span>
+                  {selectedSignal.title.toUpperCase()}
                 </h2>
 
                 <div className="glass p-8 rounded-[2.5rem] border-white/5 bg-white/[0.02] relative overflow-hidden group">

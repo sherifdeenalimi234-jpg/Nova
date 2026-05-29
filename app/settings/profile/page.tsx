@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User, Save, Loader2, Globe, Info, Camera, ShieldCheck, Zap } from 'lucide-react';
 import { requestCreatorAccess } from '@/lib/actions/profile';
+import { uploadFile } from '@/lib/supabase/storage';
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,29 @@ export default function ProfileSettings() {
     setRequesting(false);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSaving(true);
+    try {
+      const url = await uploadFile(file, 'avatars');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: url })
+          .eq('id', user.id);
+
+        setProfile({ ...profile, avatar_url: url });
+        alert("Avatar synchronized.");
+      }
+    } catch (err: any) {
+      alert("Upload failed: " + err.message);
+    }
+    setSaving(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -115,9 +139,10 @@ export default function ProfileSettings() {
                        <User size={32} className="text-white/20" />
                     )}
                  </div>
-                 <button className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                 <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl cursor-pointer">
                     <Camera size={20} className="text-nova-cyan" />
-                 </button>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                 </label>
               </div>
               <div>
                  <h3 className="text-sm font-bold mb-1 uppercase tracking-wider">Profile Visual</h3>
