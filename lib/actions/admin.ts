@@ -3,6 +3,57 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * Proactively ensures the required columns for creator approval exist in the profiles table.
+ * This handles the "Could not find column" errors by attempting to create them and reloading the schema.
+ * Only runs if the RPC exists and the user is an admin.
+ */
+async function ensureCreatorColumns(supabase: any) {
+  try {
+    const sql = `
+      DO $$
+      BEGIN
+        -- Add columns if they don't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'email') THEN
+          ALTER TABLE public.profiles ADD COLUMN email TEXT;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'creator_approved') THEN
+          ALTER TABLE public.profiles ADD COLUMN creator_approved BOOLEAN DEFAULT false;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'creator_approved_at') THEN
+          ALTER TABLE public.profiles ADD COLUMN creator_approved_at TIMESTAMP WITH TIME ZONE;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'approved_by') THEN
+          ALTER TABLE public.profiles ADD COLUMN approved_by UUID;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'approval_status') THEN
+          ALTER TABLE public.profiles ADD COLUMN approval_status TEXT DEFAULT 'pending';
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'creator_status') THEN
+          ALTER TABLE public.profiles ADD COLUMN creator_status TEXT DEFAULT 'pending';
+        END IF;
+
+        -- Reload PostgREST schema cache
+        NOTIFY pgrst, 'reload schema';
+      END $$;
+    `;
+
+    // Use the safer exec_sql_admin RPC
+    const { error } = await supabase.rpc('exec_sql_admin', { sql_query: sql });
+    if (error) {
+      // It's normal for this to fail if the migration hasn't run or user isn't admin
+      console.log('Schema sync info (expected if migration not yet applied):', error.message);
+    }
+  } catch (err) {
+    console.error('Failed to sync schema:', err);
+  }
+}
+
 export async function moderatePost(postId: string, status: 'approved' | 'rejected') {
   const supabase = await createClient();
 
@@ -36,55 +87,70 @@ export async function featurePost(postId: string, isFeatured: boolean) {
 }
 
 export async function moderatePremiumRequest(requestId: string, status: 'approved' | 'rejected') {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // 1. Update the request status
-  const { data: request, error: requestError } = await supabase
-    .from('premium_requests')
-    .update({ status })
-    .eq('id', requestId)
-    .select()
-    .single();
+    // Ensure schema is up to date - only once or when needed
+    await ensureCreatorColumns(supabase);
 
-  if (requestError) return { error: requestError };
+    const { data: { user: adminUser } } = await supabase.auth.getUser();
 
-  // 2. If approved, upgrade the user's profile to verified creator
-  if (status === 'approved') {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        is_verified_creator: true,
-        creator_status: 'approved',
-        creator_approved_at: new Date().toISOString()
-      })
-      .eq('id', request.user_id);
+    // 1. Update the request status
+    const { data: request, error: requestError } = await supabase
+      .from('premium_requests')
+      .update({ status })
+      .eq('id', requestId)
+      .select()
+      .single();
 
-    if (profileError) return { error: profileError };
+    if (requestError) return { error: requestError };
 
-    // 3. Ensure creator_profiles record exists
-    const { error: creatorProfileError } = await supabase
-      .from('creator_profiles')
-      .upsert({ id: request.user_id })
-      .eq('id', request.user_id);
+    // 2. Update user's profile with detailed approval data
+    if (status === 'approved') {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: true,
+          creator_status: 'approved',
+          approval_status: 'approved',
+          creator_approved: true,
+          creator_approved_at: new Date().toISOString(),
+          approved_by: adminUser?.id
+        })
+        .eq('id', request.user_id);
 
-    if (creatorProfileError) console.error('Error creating creator profile:', creatorProfileError);
-  } else if (status === 'rejected') {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        is_verified_creator: false,
-        creator_status: 'rejected'
-      })
-      .eq('id', request.user_id);
+      if (profileError) return { error: profileError };
 
-    if (profileError) return { error: profileError };
+      // 3. Ensure creator_profiles record exists
+      const { error: creatorProfileError } = await supabase
+        .from('creator_profiles')
+        .upsert({ id: request.user_id })
+        .eq('id', request.user_id);
+
+      if (creatorProfileError) console.error('Error creating creator profile:', creatorProfileError);
+    } else if (status === 'rejected') {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: false,
+          creator_status: 'rejected',
+          approval_status: 'rejected',
+          creator_approved: false
+        })
+        .eq('id', request.user_id);
+
+      if (profileError) return { error: profileError };
+    }
+
+    revalidatePath('/admin');
+    revalidatePath('/admin/creators');
+    revalidatePath('/feed');
+    revalidatePath('/creator');
+    return { error: null, success: true };
+  } catch (error: any) {
+    console.error('Moderate premium request failed:', error);
+    return { error: { message: error.message || 'Verification sequence failed' }, success: false };
   }
-
-  revalidatePath('/admin');
-  revalidatePath('/admin/creators');
-  revalidatePath('/feed');
-  revalidatePath('/creator');
-  return { error: null };
 }
 
 export async function moderateSurvey(surveyId: string, status: 'open' | 'closed' | 'deleted') {
