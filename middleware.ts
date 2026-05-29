@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
     if (profile) return profile;
     const { data } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, is_verified_creator')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -52,6 +52,12 @@ export async function middleware(request: NextRequest) {
     if (!user) return false;
     const p = await getCachedProfile();
     return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || p?.is_admin;
+  }
+
+  const isVerifiedCreator = async () => {
+    if (!user) return false;
+    const p = await getCachedProfile();
+    return p?.is_verified_creator;
   }
 
   // 1. Redirect authenticated users away from landing page
@@ -114,7 +120,36 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 4. Prevent Admin from accessing user feed & tools
+  // 4. Creator-only route protection
+  if (pathname.startsWith('/creator')) {
+    if (user) {
+      const is_creator = await isVerifiedCreator();
+      const is_admin = await isAdminUser();
+
+      if (!is_creator && !is_admin) {
+        console.log(`[Middleware] Non-creator user ${user.email} accessing /creator, redirecting to /feed`);
+        const url = request.nextUrl.clone()
+        url.pathname = '/feed'
+        const response = NextResponse.redirect(url)
+        supabaseResponse.headers.forEach((value, key) => {
+          response.headers.append(key, value)
+        })
+        return response
+      }
+      console.log(`[Middleware] Creator access granted to ${user.email}`);
+    } else {
+      console.log(`[Middleware] Guest accessing /creator, redirecting to /`);
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      const response = NextResponse.redirect(url)
+      supabaseResponse.headers.forEach((value, key) => {
+        response.headers.append(key, value)
+      })
+      return response
+    }
+  }
+
+  // 5. Prevent Admin from accessing user feed & tools
   const creatorSystemRoutes = ['/feed', '/creators', '/profile'];
   if (creatorSystemRoutes.some(route => pathname.startsWith(route))) {
     if (user) {

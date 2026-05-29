@@ -9,7 +9,7 @@ export async function requestCreatorAccess(paymentRef: string) {
 
   if (!user) return { error: "Authentication required." };
 
-  const { error } = await supabase
+  const { error: requestError } = await supabase
     .from('premium_requests')
     .insert({
       user_id: user.id,
@@ -17,11 +17,20 @@ export async function requestCreatorAccess(paymentRef: string) {
       status: 'pending'
     });
 
-  if (!error) {
+  if (requestError) return { error: requestError };
+
+  // Also update the profile status for immediate visibility
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ creator_status: 'pending' })
+    .eq('id', user.id);
+
+  if (!profileError) {
+    revalidatePath('/feed');
     revalidatePath('/settings/profile');
   }
 
-  return { error };
+  return { error: profileError };
 }
 
 export async function updateProfile(data: {

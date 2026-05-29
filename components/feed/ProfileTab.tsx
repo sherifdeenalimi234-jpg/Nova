@@ -62,9 +62,13 @@ export default function ProfileTab() {
             <h2 className="text-xl font-black uppercase tracking-tight">{profile.full_name}</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-nova-cyan text-[9px] font-black uppercase tracking-widest">
-                {profile.is_verified_creator ? 'Verified Creator' : 'Community Node'}
+                {profile.is_verified_creator ? 'Verified Creator' : profile.creator_status === 'pending' ? 'Verification Pending' : 'Community Node'}
               </span>
-              {profile.is_verified_creator && <Shield size={12} className="text-nova-cyan" />}
+              {profile.is_verified_creator ? (
+                <Shield size={12} className="text-nova-cyan" />
+              ) : profile.creator_status === 'pending' && (
+                <Loader2 size={12} className="text-nova-cyan animate-spin" />
+              )}
             </div>
           </div>
         </div>
@@ -123,7 +127,7 @@ export default function ProfileTab() {
                   Unlock professional portfolio tools, research logs, survey systems, and ecosystem-wide visibility.
                </p>
                <button
-                 disabled={requesting || requestSent}
+                 disabled={requesting || requestSent || profile.creator_status === 'pending'}
                  onClick={async () => {
                     setRequesting(true);
                     const { error } = await requestCreatorAccess("MANUAL_APP_" + profile.id);
@@ -132,7 +136,15 @@ export default function ProfileTab() {
                  }}
                  className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                >
-                  {requesting ? <Loader2 size={14} className="animate-spin" /> : requestSent ? "Request Transmitted" : "Begin Application"}
+                  {requesting ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (requestSent || profile.creator_status === 'pending') ? (
+                    "Request Transmitted"
+                  ) : profile.creator_status === 'rejected' ? (
+                    "Re-apply for Access"
+                  ) : (
+                    "Begin Application"
+                  )}
                </button>
             </div>
          )}

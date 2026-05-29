@@ -52,7 +52,29 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
   if (status === 'approved') {
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ is_verified_creator: true })
+      .update({
+        is_verified_creator: true,
+        creator_status: 'approved',
+        creator_approved_at: new Date().toISOString()
+      })
+      .eq('id', request.user_id);
+
+    if (profileError) return { error: profileError };
+
+    // 3. Ensure creator_profiles record exists
+    const { error: creatorProfileError } = await supabase
+      .from('creator_profiles')
+      .upsert({ id: request.user_id })
+      .eq('id', request.user_id);
+
+    if (creatorProfileError) console.error('Error creating creator profile:', creatorProfileError);
+  } else if (status === 'rejected') {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        is_verified_creator: false,
+        creator_status: 'rejected'
+      })
       .eq('id', request.user_id);
 
     if (profileError) return { error: profileError };
@@ -60,6 +82,8 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
 
   revalidatePath('/admin');
   revalidatePath('/admin/creators');
+  revalidatePath('/feed');
+  revalidatePath('/creator');
   return { error: null };
 }
 
