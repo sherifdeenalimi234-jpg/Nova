@@ -60,9 +60,14 @@ export default function FeedPage() {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         router.push("/");
+      } else if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        // Handled by checkAuth
+      } else if (event === 'USER_UPDATED') {
+        // Triggered when auth metadata updates, but we also want to re-fetch profile
+        checkAuth();
       }
     });
 
