@@ -5,69 +5,89 @@ import { revalidatePath } from 'next/cache';
 
 export async function requestCreatorAccess(paymentRef: string, proofUrl?: string, note?: string) {
   try {
+    console.log("[Profile] Starting requestCreatorAccess server action...");
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!user) return { error: "Authentication required." };
+    if (authError) {
+      console.error("[Profile] Auth Error:", authError);
+      return { error: `Authentication error: ${authError.message}` };
+    }
+
+    if (!user) {
+      console.error("[Profile] No user found in session.");
+      return { error: "Authentication required. Please log in again." };
+    }
 
     // Log the initiation
     console.log(`[Profile] Initiating creator access request for user ${user.id}`);
 
-    console.log("[Profile] Data to insert:", {
+    const payload = {
       user_id: user.id,
       payment_reference: paymentRef,
       verification_doc_url: proofUrl,
+      proof_url: proofUrl,
       payment_note: note,
-    });
+      status: 'pending',
+      approval_status: 'pending',
+      verification_status: 'under_review'
+    };
+
+    console.log("[Profile] Data to insert into premium_requests:", payload);
 
     const { data: insertData, error: requestError } = await supabase
       .from('premium_requests')
-      .insert({
-        user_id: user.id,
-        payment_reference: paymentRef,
-        verification_doc_url: proofUrl,
-        proof_url: proofUrl,
-        payment_note: note,
-        status: 'pending',
-        approval_status: 'pending',
-        verification_status: 'under_review'
-      })
+      .insert(payload)
       .select();
 
-    console.log("[Profile] Insert Result:", { insertData, requestError });
-
     if (requestError) {
-      console.error("[Profile] Error inserting premium request:", requestError);
+      console.error("[Profile] Error inserting premium request:", {
+        message: requestError.message,
+        code: requestError.code,
+        details: requestError.details,
+        hint: requestError.hint
+      });
       return { error: `Database submission failed: ${requestError.message} (Code: ${requestError.code})` };
     }
 
+    console.log("[Profile] Insert successful:", insertData);
+
     // Also update the profile status for immediate visibility
     console.log("[Profile] Updating profile for user:", user.id);
+    const profileUpdate = {
+      creator_status: 'pending',
+      payment_status: 'under_review',
+      verification_status: 'pending',
+      verification_submitted_at: new Date().toISOString()
+    };
+
+    console.log("[Profile] Profile update payload:", profileUpdate);
+
     const { data: updateData, error: profileError } = await supabase
       .from('profiles')
-      .update({
-        creator_status: 'pending',
-        payment_status: 'under_review',
-        verification_status: 'pending',
-        verification_submitted_at: new Date().toISOString()
-      })
+      .update(profileUpdate)
       .eq('id', user.id)
       .select();
 
-    console.log("[Profile] Profile Update Result:", { updateData, profileError });
-
     if (profileError) {
-      console.error("[Profile] Error updating profile status:", profileError);
-      // We don't return here because the request was already inserted
+      console.error("[Profile] Error updating profile status:", {
+        message: profileError.message,
+        code: profileError.code,
+        details: profileError.details
+      });
+      // We don't return error here because the request was already inserted successfully
+    } else {
+      console.log("[Profile] Profile update successful:", updateData);
     }
 
     revalidatePath('/feed');
     revalidatePath('/settings/profile');
+    revalidatePath('/admin');
 
     return { error: null };
   } catch (err: any) {
     console.error("[Profile] Unexpected error in requestCreatorAccess:", err);
-    return { error: "An unexpected system error occurred. Our engineers have been notified." };
+    return { error: `System Error: ${err.message || "An unexpected system error occurred."}` };
   }
 }
 
