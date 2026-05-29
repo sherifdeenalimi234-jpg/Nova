@@ -45,10 +45,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
 
   const handleLogout = async () => {
     const supabase = createClient();
+    console.log("[User Logout] Clearing session...");
     await supabase.auth.signOut();
-    console.log("[Logout] Session cleared, redirecting to landing...");
     router.push('/');
     router.refresh();
+    // Force a reload to ensure all states are cleared
+    window.location.href = '/';
   };
 
   return (

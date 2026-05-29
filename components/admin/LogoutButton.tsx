@@ -12,9 +12,12 @@ export default function LogoutButton() {
   const supabase = createClient();
 
   const handleLogout = async () => {
+    console.log("[Admin Logout] Clearing session...");
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
+    // Force a reload to ensure all states are cleared
+    window.location.href = '/';
   };
 
   return (

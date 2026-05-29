@@ -60,6 +60,30 @@ export default function FeedPage() {
 
     checkAuth();
 
+    // Listen for profile changes (Realtime)
+    let profileSubscription: any;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        profileSubscription = supabase
+          .channel(`profile-${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${user.id}`
+            },
+            () => {
+              console.log("[Realtime] Profile updated, re-fetching...");
+              checkAuth();
+            }
+          )
+          .subscribe();
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         router.push("/");
@@ -73,6 +97,7 @@ export default function FeedPage() {
 
     return () => {
       subscription.unsubscribe();
+      if (profileSubscription) profileSubscription.unsubscribe();
     };
   }, [router]);
 
