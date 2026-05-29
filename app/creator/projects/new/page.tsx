@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { createProject } from '@/lib/actions/projects';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Trash2,
@@ -15,8 +17,12 @@ import {
 import { motion } from 'framer-motion';
 
 export default function CreateProjectPage() {
+  const router = useRouter();
   const [techStack, setTechStack] = useState<string[]>([]);
   const [newTech, setNewTech] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const addTech = () => {
     if (newTech && !techStack.includes(newTech)) {
@@ -37,8 +43,21 @@ export default function CreateProjectPage() {
             <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Register a new innovation node in your portfolio</p>
          </div>
          <div className="flex gap-4">
-            <button className="px-8 py-3 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all">
-               Deploy Project
+            <button
+              onClick={async () => {
+                if (!title || !description) return;
+                setLoading(true);
+                const { error } = await createProject({
+                  title,
+                  description
+                });
+                setLoading(false);
+                if (!error) router.push('/creator/projects');
+              }}
+              disabled={loading}
+              className="px-8 py-3 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all disabled:opacity-50"
+            >
+               {loading ? 'Deploying...' : 'Deploy Project'}
             </button>
          </div>
       </header>
@@ -51,6 +70,8 @@ export default function CreateProjectPage() {
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-2">Project Identity</label>
                 <input
                   type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="Project Title"
                   className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-lg font-bold focus:outline-none focus:border-nova-cyan/50 transition-all placeholder:text-white/10"
                 />
@@ -58,6 +79,8 @@ export default function CreateProjectPage() {
              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-2">Innovation Abstract</label>
                 <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe the core purpose and impact of this project..."
                   rows={6}
                   className="w-full bg-black/40 border border-white/5 rounded-[2rem] px-8 py-6 text-sm focus:outline-none focus:border-nova-cyan/50 transition-all placeholder:text-white/10 resize-none"

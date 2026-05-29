@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { createSurvey } from '@/lib/actions/surveys';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Trash2,
@@ -28,6 +30,10 @@ interface Question {
 }
 
 export default function CreateSurveyPage() {
+  const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([
     { id: '1', type: 'text', text: 'Enter your first question...', required: true }
   ]);
@@ -63,9 +69,23 @@ export default function CreateSurveyPage() {
                <Save size={14} />
                Save Draft
             </button>
-            <button className="px-6 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (!title || !description || questions.length === 0) return;
+                setLoading(true);
+                const { error } = await createSurvey({
+                  title,
+                  description,
+                  questions
+                });
+                setLoading(false);
+                if (!error) router.push('/creator/surveys');
+              }}
+              disabled={loading}
+              className="px-6 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
+            >
                <Rocket size={14} />
-               Launch Survey
+               {loading ? 'Launching...' : 'Launch Survey'}
             </button>
          </div>
       </header>
@@ -76,10 +96,14 @@ export default function CreateSurveyPage() {
            <section className="p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl space-y-6">
               <input
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Survey Title"
                 className="w-full bg-transparent border-none text-2xl font-black uppercase tracking-tight focus:ring-0 placeholder:text-white/10"
               />
               <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the purpose of this data collection..."
                 rows={2}
                 className="w-full bg-transparent border-none text-sm focus:ring-0 placeholder:text-white/10 resize-none"

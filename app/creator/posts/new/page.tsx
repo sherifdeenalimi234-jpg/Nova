@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { createPost } from '@/lib/actions/posts';
+import { useRouter } from 'next/navigation';
 import {
   Upload,
   FileText,
@@ -24,11 +26,13 @@ const POST_TYPES = [
 ];
 
 export default function CreatePostPage() {
+  const router = useRouter();
   const [postType, setPostType] = useState('research');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [media, setMedia] = useState<File[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -55,9 +59,23 @@ export default function CreatePostPage() {
                <Eye size={14} />
                {previewMode ? 'Edit Mode' : 'Preview'}
             </button>
-            <button className="px-6 py-3 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (!title || !content) return;
+                setLoading(true);
+                const { error } = await createPost({
+                  title,
+                  content,
+                  post_type: postType
+                });
+                setLoading(false);
+                if (!error) router.push('/creator/posts');
+              }}
+              disabled={loading}
+              className="px-6 py-3 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center gap-2 disabled:opacity-50"
+            >
                <Send size={14} />
-               Transmit
+               {loading ? 'Transmitting...' : 'Transmit'}
             </button>
          </div>
       </header>
