@@ -75,14 +75,21 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       })
       .eq('id', request.user_id);
 
-    if (profileError) return { error: profileError };
+    if (profileError) {
+      console.error('Error updating profile to verified creator:', profileError);
+      return { error: profileError };
+    }
 
     // 3. Ensure creator_profiles record exists
     const { error: creatorProfileError } = await supabase
       .from('creator_profiles')
       .upsert({ id: request.user_id });
 
-    if (creatorProfileError) console.error('Error creating creator profile:', creatorProfileError);
+    if (creatorProfileError) {
+      console.error('Error creating creator profile:', creatorProfileError);
+    }
+
+    console.log(`[Admin] Successfully approved creator request ${requestId} for user ${request.user_id}`);
   } else if (status === 'rejected') {
     const { error: profileError } = await supabase
       .from('profiles')
@@ -93,7 +100,12 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       })
       .eq('id', request.user_id);
 
-    if (profileError) return { error: profileError };
+    if (profileError) {
+      console.error('Error updating profile to rejected:', profileError);
+      return { error: profileError };
+    }
+
+    console.log(`[Admin] Successfully rejected creator request ${requestId} for user ${request.user_id}`);
   }
 
   revalidatePath('/admin');
