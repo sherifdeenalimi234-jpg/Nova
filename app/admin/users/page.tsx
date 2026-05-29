@@ -1,7 +1,7 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import UserManagement from '@/components/admin/UserManagement';
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
