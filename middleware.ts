@@ -27,29 +27,54 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) console.error('Middleware getUser error:', userError.message)
 
   // Ensure authenticated users don't get stuck on auth callback or login if already have session
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/', request.url))
+  if (user && request.nextUrl.pathname === '/auth/login') {
+    console.log('User already logged in, redirecting to home.');
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    const response = NextResponse.redirect(url)
+    // IMPORTANT: Transfer all headers including cookies to the new response
+    supabaseResponse.headers.forEach((value, key) => {
+      response.headers.append(key, value)
+    })
+    return response
   }
 
   // Admin protection
   if (request.nextUrl.pathname.startsWith('/admin')) {
+    console.log('Checking admin access for:', user?.email);
     if (!user) {
-      return NextResponse.redirect(new URL('/', request.url))
+      console.log('No user session, redirecting to home.');
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      const response = NextResponse.redirect(url)
+      supabaseResponse.headers.forEach((value, key) => {
+        response.headers.append(key, value)
+      })
+      return response
     }
 
     // Check if user is admin
-    const { data: profile, error } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (error || !profile?.is_admin) {
-      return NextResponse.redirect(new URL('/', request.url))
+    if (profileError || !profile?.is_admin) {
+      console.error('Admin verification failed:', profileError?.message || 'Not an admin');
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      const response = NextResponse.redirect(url)
+      supabaseResponse.headers.forEach((value, key) => {
+        response.headers.append(key, value)
+      })
+      return response
     }
+    console.log('Admin access granted.');
   }
 
   return supabaseResponse

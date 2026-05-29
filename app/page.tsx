@@ -24,31 +24,50 @@ export default function Home() {
   const [isCreator, setIsCreator] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("explore"); // Default to explore in feed
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
+    let supabase: any;
+    try {
+      supabase = createClient();
+    } catch (e) {
+      console.error("Failed to initialize Supabase client:", e);
+      setLoading(false);
+      return;
+    }
 
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setIsAuthenticated(true);
-        setPhase("hub");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) console.error("Session fetch error:", error);
+        if (session?.user) {
+          setIsAuthenticated(true);
+          setPhase("hub");
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_verified_creator, is_admin')
-          .eq('id', session.user.id)
-          .single();
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_verified_creator, is_admin')
+            .eq('id', session.user.id)
+            .single();
 
-        if (profile?.is_verified_creator || profile?.is_admin) {
-          setIsCreator(true);
+          if (profile?.is_verified_creator || profile?.is_admin) {
+            setIsCreator(true);
+          }
+
+          if (profile?.is_admin) {
+            console.log("Admin detected in initial session, redirecting...");
+            window.location.href = '/admin';
+          }
         }
+      } finally {
+        setLoading(false);
       }
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       if (session?.user) {
         setIsAuthenticated(true);
         setPhase("hub");
@@ -63,8 +82,8 @@ export default function Home() {
           setIsCreator(true);
         }
 
-        // If admin lands here, send them to admin dashboard
-        if (profile?.is_admin) {
+        // If admin lands here and it's a SIGNED_IN event, send them to admin dashboard
+        if (profile?.is_admin && event === 'SIGNED_IN') {
           window.location.href = '/admin';
         }
       } else {
@@ -100,6 +119,14 @@ export default function Home() {
       alert('Authentication failed. Please try again.');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-2 border-nova-cyan border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-black text-foreground selection:bg-nova-cyan/30 overflow-x-hidden">
