@@ -36,83 +36,100 @@ export async function featurePost(postId: string, isFeatured: boolean) {
 }
 
 export async function moderatePremiumRequest(requestId: string, status: 'approved' | 'rejected') {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // Security check: Only admins can moderate requests
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Authentication required." };
+    // Security check: Only admins can moderate requests
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Authentication required." };
 
-  const { data: adminProfile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  if (!adminProfile?.is_admin) return { error: "Unauthorized access." };
-
-  // 1. Update the request status
-  const { data: request, error: requestError } = await supabase
-    .from('premium_requests')
-    .update({
-      status,
-      approved_at: status === 'approved' ? new Date().toISOString() : null
-    })
-    .eq('id', requestId)
-    .select()
-    .single();
-
-  if (requestError) return { error: requestError };
-
-  // 2. If approved, upgrade the user's profile to verified creator
-  if (status === 'approved') {
-    const { error: profileError } = await supabase
+    const { data: adminProfile } = await supabase
       .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (!adminProfile?.is_admin) return { error: "Unauthorized access." };
+
+    // 1. Update the request status
+    const { data: request, error: requestError } = await supabase
+      .from('premium_requests')
       .update({
-        is_verified_creator: true,
-        creator_status: 'approved',
-        payment_status: 'verified',
-        creator_approved_at: new Date().toISOString()
+        status,
+        approval_status: status,
+        approved_at: status === 'approved' ? new Date().toISOString() : null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id
       })
-      .eq('id', request.user_id);
+      .eq('id', requestId)
+      .select()
+      .single();
 
-    if (profileError) {
-      console.error('Error updating profile to verified creator:', profileError);
-      return { error: profileError };
+    if (requestError) {
+      console.error("[Admin] Error updating premium request:", requestError);
+      return { error: `Verification update failed: ${requestError.message}` };
     }
 
-    // 3. Ensure creator_profiles record exists
-    const { error: creatorProfileError } = await supabase
-      .from('creator_profiles')
-      .upsert({ id: request.user_id });
+    // 2. If approved, upgrade the user's profile to verified creator
+    if (status === 'approved') {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: true,
+          creator_verified: true,
+          creator_status: 'approved',
+          payment_status: 'verified',
+          verification_status: 'verified',
+          creator_approved_at: new Date().toISOString(),
+          creator_since: new Date().toISOString()
+        })
+        .eq('id', request.user_id);
 
-    if (creatorProfileError) {
-      console.error('Error creating creator profile:', creatorProfileError);
+      if (profileError) {
+        console.error('[Admin] Error updating profile to verified creator:', profileError);
+        return { error: `Profile update failed: ${profileError.message}` };
+      }
+
+      // 3. Ensure creator_profiles record exists
+      const { error: creatorProfileError } = await supabase
+        .from('creator_profiles')
+        .upsert({ id: request.user_id });
+
+      if (creatorProfileError) {
+        console.error('[Admin] Error creating creator profile:', creatorProfileError);
+      }
+
+      console.log(`[Admin] Successfully approved creator request ${requestId} for user ${request.user_id}`);
+    } else if (status === 'rejected') {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: false,
+          creator_verified: false,
+          creator_status: 'rejected',
+          payment_status: 'rejected',
+          verification_status: 'rejected'
+        })
+        .eq('id', request.user_id);
+
+      if (profileError) {
+        console.error('[Admin] Error updating profile to rejected:', profileError);
+        return { error: `Profile update failed: ${profileError.message}` };
+      }
+
+      console.log(`[Admin] Successfully rejected creator request ${requestId} for user ${request.user_id}`);
     }
 
-    console.log(`[Admin] Successfully approved creator request ${requestId} for user ${request.user_id}`);
-  } else if (status === 'rejected') {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        is_verified_creator: false,
-        creator_status: 'rejected',
-        payment_status: 'rejected'
-      })
-      .eq('id', request.user_id);
+    revalidatePath('/admin');
+    revalidatePath('/admin/creators');
+    revalidatePath('/feed');
+    revalidatePath('/creator');
 
-    if (profileError) {
-      console.error('Error updating profile to rejected:', profileError);
-      return { error: profileError };
-    }
-
-    console.log(`[Admin] Successfully rejected creator request ${requestId} for user ${request.user_id}`);
+    return { error: null };
+  } catch (err: any) {
+    console.error("[Admin] Unexpected error in moderatePremiumRequest:", err);
+    return { error: "A critical system error occurred during moderation." };
   }
-
-  revalidatePath('/admin');
-  revalidatePath('/admin/creators');
-  revalidatePath('/feed');
-  revalidatePath('/creator');
-  return { error: null };
 }
 
 export async function moderateSurvey(surveyId: string, status: 'open' | 'closed' | 'deleted') {
