@@ -64,21 +64,32 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
     }
     setLoading(true);
     setError(null);
+    console.log("[Modal] Initiating submission sequence...");
+
     try {
       let proofUrl = "";
       if (proofFile) {
+        console.log("[Modal] Uploading file to 'creator-proofs'...");
         try {
           proofUrl = await uploadFile(proofFile, "creator-proofs");
+          console.log("[Modal] Upload successful. URL:", proofUrl);
         } catch (uploadErr: any) {
-          console.error("Upload error:", uploadErr);
-          throw new Error(uploadErr.message || "Failed to upload proof. Please try again.");
+          console.error("[Modal] Upload failure:", uploadErr);
+          throw new Error(`Upload failed: ${uploadErr.message || "Please check your connection and try again."}`);
         }
       }
-      const { error: requestErr } = await requestCreatorAccess(paymentRef, proofUrl, note);
-      if (requestErr) throw requestErr;
+
+      console.log("[Modal] Transmitting database request...");
+      const result = await requestCreatorAccess(paymentRef, proofUrl, note);
+      console.log("[Modal] Transmission result:", result);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
       setStep("success");
     } catch (err: any) {
-      console.error("Submission error:", err);
+      console.error("[Modal] Submission sequence failure:", err);
       setError(err.message || "Submission sequence failed. Please try again.");
     } finally {
       setLoading(false);

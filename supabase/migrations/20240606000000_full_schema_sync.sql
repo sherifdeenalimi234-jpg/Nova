@@ -125,5 +125,39 @@ BEGIN
 END $$;
 
 -- 6. Final Data Sync
+-- 6. RLS Policies for premium_requests
+ALTER TABLE public.premium_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can insert own premium requests" ON public.premium_requests;
+CREATE POLICY "Users can insert own premium requests"
+ON public.premium_requests FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can view own premium requests" ON public.premium_requests;
+CREATE POLICY "Users can view own premium requests"
+ON public.premium_requests FOR SELECT
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can view all premium requests" ON public.premium_requests;
+CREATE POLICY "Admins can view all premium requests"
+ON public.premium_requests FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_admin = true
+  )
+);
+
+DROP POLICY IF EXISTS "Admins can update premium requests" ON public.premium_requests;
+CREATE POLICY "Admins can update premium requests"
+ON public.premium_requests FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_admin = true
+  )
+);
+
+-- 7. Final Data Sync
 UPDATE public.profiles SET creator_status = 'free' WHERE creator_status IS NULL;
 UPDATE public.profiles SET payment_status = 'verified', creator_status = 'approved', is_verified_creator = true WHERE is_verified_creator = true;
