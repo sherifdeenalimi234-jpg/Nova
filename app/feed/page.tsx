@@ -7,6 +7,7 @@ import BottomNav from "@/components/navigation/BottomNav";
 import RingSystem from "@/components/feed/RingSystem";
 import FeedGrid from "@/components/feed/FeedGrid";
 import CreatePostModal from "@/components/feed/CreatePostModal";
+import ProfileTab from "@/components/feed/ProfileTab";
 import { createClient } from "@/lib/supabase/client";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -126,6 +127,12 @@ export default function FeedPage() {
                 <h2 className="text-2xl font-black uppercase tracking-[0.4em] text-nova-cyan mb-4">Command Center</h2>
                 <p className="text-white/40 text-sm">Synchronizing localized innovation data with your profile...</p>
              </div>
+          )}
+
+          {activeTab === "profile" && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+               <ProfileTab />
+            </div>
           )}
 
           {activeTab !== "explore" && activeTab !== "home" && (
