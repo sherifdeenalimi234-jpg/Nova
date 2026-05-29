@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 // The client you created in Step 3
 import { createClient } from '@/lib/supabase/server'
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   // if "next" is in search params, use it as the redirection URL
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/feed'
 
   if (code) {
     const supabase = await createClient()
@@ -19,19 +20,22 @@ export async function GET(request: Request) {
 
     if (data?.user) {
       const user = data.user
-      const adminEmail = 'sherifdeenalimititilope@gmail.com'
 
       console.log('User authenticated:', user.email);
 
-      // Automatically assign admin and creator privileges to the specified email
-      if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
+      // Explicitly redirect admin to mission control
+      let redirectUrl = next
+      const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+      // Automatically assign admin privileges ONLY to the specified email
+      if (isAdmin) {
         console.log('Admin user detected, updating profile...');
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             id: user.id,
             is_admin: true,
-            is_verified_creator: true,
+            // Admin should NOT have creator privileges automatically
             full_name: user.user_metadata.full_name || user.email?.split('@')[0],
             avatar_url: user.user_metadata.avatar_url,
             updated_at: new Date().toISOString()
@@ -40,6 +44,7 @@ export async function GET(request: Request) {
         if (profileError) {
           console.error('Failed to update admin privileges:', profileError.message)
         }
+        redirectUrl = '/admin'
       } else {
         // Ensure standard profile exists
         await supabase
@@ -50,12 +55,9 @@ export async function GET(request: Request) {
             avatar_url: user.user_metadata.avatar_url,
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' })
-      }
 
-      // Explicitly redirect admin to mission control
-      let redirectUrl = next
-      if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
-        redirectUrl = '/admin'
+        // If "next" was "/" (default from many places), ensure normal users go to /feed
+        if (redirectUrl === '/') redirectUrl = '/feed'
       }
 
       console.log('Redirecting to:', redirectUrl);

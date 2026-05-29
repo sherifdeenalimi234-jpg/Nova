@@ -5,6 +5,7 @@ import { Home, Compass, Cpu, User, MoreHorizontal, LayoutGrid, ClipboardList, Im
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 interface BottomNavProps {
   activeTab: string;
@@ -14,6 +15,7 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const router = useRouter();
 
   const tabs = [
     { id: "home", icon: Home, label: "Home" },
@@ -44,7 +46,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = '/';
+    console.log("[Logout] Session cleared, redirecting to landing...");
+    router.push('/');
+    router.refresh();
   };
 
   return (
