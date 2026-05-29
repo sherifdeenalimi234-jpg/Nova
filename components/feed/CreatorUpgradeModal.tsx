@@ -68,7 +68,7 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
       let proofUrl = "";
       if (proofFile) {
         try {
-          proofUrl = await uploadFile(proofFile, "documents");
+          proofUrl = await uploadFile(proofFile, "creator-proofs");
         } catch (uploadErr: any) {
           console.error("Upload error:", uploadErr);
           throw new Error(uploadErr.message || "Failed to upload proof. Please try again.");

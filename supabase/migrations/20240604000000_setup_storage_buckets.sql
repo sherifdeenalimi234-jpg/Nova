@@ -1,25 +1,23 @@
 -- Create buckets if they don't exist
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('documents', 'documents', true)
+VALUES ('creator-proofs', 'creator-proofs', true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Set up RLS for 'documents' bucket
+-- Set up RLS for 'creator-proofs' bucket
 -- Dropping existing to ensure clean slate
-DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "View Documents" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated Uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Admins Manage All" ON storage.objects;
-DROP POLICY IF EXISTS "Users Manage Own" ON storage.objects;
 
--- Allow public viewing of documents (proofs) for admin verification
 -- Allow users to view their own documents and admins to view everything
-CREATE POLICY "View Documents"
+CREATE POLICY "View Creator Proofs"
 ON storage.objects FOR SELECT
 USING (
-  bucket_id = 'documents' AND (
+  bucket_id = 'creator-proofs' AND (
     (auth.uid() = owner) OR
     EXISTS (
       SELECT 1 FROM public.profiles
@@ -29,19 +27,19 @@ USING (
 );
 
 -- Allow authenticated users to upload their own proof
-CREATE POLICY "Authenticated Uploads"
+CREATE POLICY "Authenticated Proof Uploads"
 ON storage.objects FOR INSERT
 WITH CHECK (
-  bucket_id = 'documents' AND
+  bucket_id = 'creator-proofs' AND
   auth.role() = 'authenticated'
 );
 
--- Allow admins full control over the documents bucket
-CREATE POLICY "Admins Manage All"
+-- Allow admins full control over the creator-proofs bucket
+CREATE POLICY "Admins Manage Creator Proofs"
 ON storage.objects FOR ALL
 TO authenticated
 USING (
-  bucket_id = 'documents' AND
+  bucket_id = 'creator-proofs' AND
   EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND is_admin = true
