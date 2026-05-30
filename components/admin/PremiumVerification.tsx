@@ -64,11 +64,18 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
     setProcessingId(null);
   };
 
-  const filteredRequests = requests.filter(r =>
-    r.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRequests = requests.filter(r => {
+    const search = searchTerm.toLowerCase();
+    const name = r.profiles?.full_name?.toLowerCase() || '';
+    const email = r.profiles?.email?.toLowerCase() || '';
+    const ref = r.payment_reference?.toLowerCase() || '';
+    const userId = r.user_id?.toLowerCase() || '';
+
+    return name.includes(search) ||
+           email.includes(search) ||
+           ref.includes(search) ||
+           userId.includes(search);
+  });
 
   return (
     <div className="space-y-6">
@@ -113,8 +120,12 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-base font-black text-white truncate tracking-tight">{req.profiles?.full_name || 'ANONYMOUS'}</h4>
-                  <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">{req.profiles?.email || 'NO EMAIL'}</p>
+                  <h4 className="text-base font-black text-white truncate tracking-tight">
+                    {req.profiles?.full_name || (req.user_id ? `USER: ${req.user_id.slice(0, 8)}...` : 'ANONYMOUS')}
+                  </h4>
+                  <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">
+                    {req.profiles?.email || 'PROFILE DATA UNAVAILABLE'}
+                  </p>
                 </div>
               </div>
               <div className={cn(

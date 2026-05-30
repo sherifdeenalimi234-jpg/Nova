@@ -7,7 +7,7 @@ export default async function AdminCreatorsPage() {
 
   // Load requests with profile join
   // The join key is user_id -> profiles.id
-  // If join fails, it might be due to missing FK or column name mismatch
+  // We use .or() to sync with dashboard pending count logic
   const { data: joinedData, error: joinedError } = await supabase
     .from('premium_requests')
     .select('*, profiles!user_id(full_name, avatar_url, email)')

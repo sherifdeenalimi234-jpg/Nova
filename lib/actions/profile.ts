@@ -22,12 +22,12 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
     // Log the initiation
     console.log(`[Profile] Initiating creator access request for user ${user.id}`);
 
-    // Check for existing pending request
+    // Check for existing pending or approved request to prevent duplicates
     const { data: existingRequests, error: existingError } = await supabase
       .from('premium_requests')
       .select('id, status, approval_status, verification_status')
       .eq('user_id', user.id)
-      .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending')
+      .or('status.in.(pending,approved),approval_status.in.(pending,approved),verification_status.in.(pending,approved)')
       .limit(1);
 
     if (existingError) {
@@ -35,7 +35,13 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
     }
 
     if (existingRequests && existingRequests.length > 0) {
-      return { error: "You already have a pending creator verification request." };
+      const req = existingRequests[0];
+      const isApproved = req.status === 'approved' || req.approval_status === 'approved' || req.verification_status === 'approved';
+      return {
+        error: isApproved
+          ? "You are already a verified creator."
+          : "You already have a pending creator verification request."
+      };
     }
 
     const payload = {
