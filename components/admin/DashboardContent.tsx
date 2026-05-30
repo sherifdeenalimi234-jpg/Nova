@@ -35,7 +35,7 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const stats = [
     { label: 'Total Ecosystem Nodes', value: totalUsers, icon: Users, color: 'text-nova-cyan', href: '/admin/users' },
-    { label: 'Verified Intelligence', value: premiumUsers, icon: ShieldCheck, color: 'text-nova-purple', href: '/admin/creators' },
+    { label: 'Verified Intelligence', value: premiumUsers, icon: ShieldCheck, color: 'text-nova-purple', href: '/admin/whitelist' },
     { label: 'Active Protocols', value: activeSurveys, icon: BarChart3, color: 'text-nova-green', href: '/admin/surveys' },
     { label: 'Pending Validations', value: pendingPostsCount, icon: MessageSquare, color: 'text-nova-orange', href: '/admin/content' },
   ];
