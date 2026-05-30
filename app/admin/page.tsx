@@ -2,6 +2,9 @@ import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import DashboardContent from '@/components/admin/DashboardContent';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
@@ -25,21 +28,14 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending');
 
-  // Creator Protocol Stats - Sync with dash filter
-  const { count: pendingPremiumCount } = await supabase
+  // Creator Protocol Stats - Shared data source
+  const { data: premiumRequests } = await supabase
     .from('premium_requests')
-    .select('*', { count: 'exact', head: true })
-    .or('status.eq.pending,status.is.null');
+    .select('status');
 
-  const { count: approvedPremiumCount } = await supabase
-    .from('premium_requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'approved');
-
-  const { count: rejectedPremiumCount } = await supabase
-    .from('premium_requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'rejected');
+  const pendingPremiumCount = premiumRequests?.filter(r => !r.status || r.status === 'pending').length || 0;
+  const approvedPremiumCount = premiumRequests?.filter(r => r.status === 'approved').length || 0;
+  const rejectedPremiumCount = premiumRequests?.filter(r => r.status === 'rejected').length || 0;
 
   return (
     <DashboardContent
