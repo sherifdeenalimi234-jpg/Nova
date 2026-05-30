@@ -53,10 +53,22 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
   const router = useRouter();
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
+    let note = "";
+    if (status === 'rejected') {
+      const input = prompt("Please enter a reason for rejection (optional):");
+      if (input === null) return; // Cancelled
+      note = input;
+    }
+
     setProcessingId(id);
-    const { error } = await moderatePremiumRequest(id, status);
+    const { error } = await moderatePremiumRequest(id, status, note);
     if (!error) {
-      setRequests(requests.map(r => r.id === id ? { ...r, status, approval_status: status } : r));
+      setRequests(requests.map(r => r.id === id ? {
+        ...r,
+        status,
+        approval_status: status,
+        verification_status: status
+      } : r));
       router.refresh();
     } else {
       alert("Action failed: " + (error as any).message);
@@ -121,11 +133,13 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-base font-black text-white truncate tracking-tight">
-                    {req.profiles?.full_name || (req.user_id ? `IDENT: ${req.user_id.slice(0, 8)}` : 'UNKNOWN NODE')}
+                    {req.profiles?.full_name || req.profiles?.email || 'Unknown User'}
                   </h4>
-                  <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">
-                    {req.profiles?.email || 'OFFLINE DATA'}
-                  </p>
+                  {req.profiles?.full_name && req.profiles?.email && (
+                    <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">
+                      {req.profiles.email}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className={cn(
@@ -168,7 +182,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 onClick={() => {
                    const url = req.proof_url || req.verification_doc_url;
                    if (url) {
-                      if (url.toLowerCase().endsWith('.pdf')) {
+                      if (url.toLowerCase().includes('.pdf')) {
                          window.open(url, '_blank');
                       } else {
                          setPreviewUrl(url);
@@ -177,7 +191,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 }}
                 className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Maximize2 size={14} /> {(!req.proof_url && !req.verification_doc_url) ? "No Proof Uploaded" : "Preview Proof"}
+                <Maximize2 size={14} /> {(!req.proof_url && !req.verification_doc_url) ? "No proof uploaded." : "Preview Proof"}
               </button>
               <Link
                 href={`/u/${req.user_id}`}

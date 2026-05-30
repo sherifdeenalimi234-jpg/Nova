@@ -27,7 +27,7 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
       .from('premium_requests')
       .select('id, status, approval_status, verification_status')
       .eq('user_id', user.id)
-      .or('status.in.(pending,approved),approval_status.in.(pending,approved),verification_status.in.(pending,approved)')
+      .in('status', ['pending', 'approved'])
       .limit(1);
 
     if (existingError) {
@@ -40,7 +40,7 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
       return {
         error: isApproved
           ? "You are already a verified creator."
-          : "You already have a pending creator verification request."
+          : "Your creator verification request is already under review."
       };
     }
 
