@@ -13,7 +13,8 @@ import {
   Zap,
   ArrowUpRight,
   Shield,
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from 'lucide-react';
 
 interface DashboardContentProps {
@@ -21,13 +22,15 @@ interface DashboardContentProps {
   premiumUsers: number;
   activeSurveys: number;
   pendingPostsCount: number;
+  pendingPremiumCount?: number;
 }
 
 export default function DashboardContent({
   totalUsers,
   premiumUsers,
   activeSurveys,
-  pendingPostsCount
+  pendingPostsCount,
+  pendingPremiumCount = 0
 }: DashboardContentProps) {
   const stats = [
     { label: 'Total Ecosystem Nodes', value: totalUsers, icon: Users, color: 'text-nova-cyan', href: '/admin/users' },
@@ -123,6 +126,15 @@ export default function DashboardContent({
             <h3 className="text-base md:text-lg font-bold tracking-widest uppercase text-white leading-none mb-2 md:mb-4">System Alerts</h3>
 
             <div className="space-y-3 md:space-y-4">
+               {pendingPremiumCount > 0 && (
+                 <Link href="/admin/creators" className="block p-4 rounded-2xl bg-nova-purple/10 border border-nova-purple/20 group hover:bg-nova-purple/20 transition-all">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-nova-purple">Creator Protocols</div>
+                      <span className="px-2 py-0.5 rounded-full bg-nova-purple text-black text-[8px] font-bold">{pendingPremiumCount}</span>
+                    </div>
+                    <p className="text-[10px] md:text-[11px] text-white/40 leading-relaxed">New intelligence verification requests awaiting authentication.</p>
+                 </Link>
+               )}
                {[
                  { title: 'Security Audit', desc: 'All nodes verified successfully.', type: 'success' },
                  { title: 'Protocol Update', desc: 'L7 routing optimized for low latency.', type: 'info' },

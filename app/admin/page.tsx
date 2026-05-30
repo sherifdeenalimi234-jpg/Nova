@@ -25,12 +25,18 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending');
 
+  const { count: pendingPremiumCount } = await supabase
+    .from('premium_requests')
+    .select('*', { count: 'exact', head: true })
+    .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending');
+
   return (
     <DashboardContent
       totalUsers={totalUsers || 0}
       premiumUsers={premiumUsers || 0}
       activeSurveys={activeSurveys || 0}
       pendingPostsCount={pendingPostsCount || 0}
+      pendingPremiumCount={pendingPremiumCount || 0}
     />
   );
 }

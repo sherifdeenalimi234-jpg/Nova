@@ -58,6 +58,7 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .update({
         status,
         approval_status: status,
+        verification_status: status === 'approved' ? 'verified' : 'rejected',
         approved_at: status === 'approved' ? new Date().toISOString() : null,
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id
