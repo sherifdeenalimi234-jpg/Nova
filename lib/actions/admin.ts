@@ -36,7 +36,7 @@ export async function featurePost(postId: string, isFeatured: boolean) {
   return { error };
 }
 
-export async function moderatePremiumRequest(requestId: string, status: 'approved' | 'rejected') {
+export async function moderatePremiumRequest(requestId: string, status: 'approved' | 'rejected', adminNote?: string) {
   try {
     const supabase = await createClient();
 
@@ -56,14 +56,18 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     console.log(`[Admin] Initiating moderation workflow for ${requestId} -> ${status}`);
 
     // 1. Update the request status in premium_requests
-    const requestUpdates = {
+    const requestUpdates: any = {
       status,
       approval_status: status,
       verification_status: status,
-      approved_at: status === 'approved' ? new Date().toISOString() : null,
       reviewed_at: new Date().toISOString(),
-      reviewed_by: user.id
+      reviewed_by: user.id,
+      admin_note: adminNote || null
     };
+
+    if (status === 'approved') {
+      requestUpdates.approved_at = new Date().toISOString();
+    }
 
     const { data: request, error: requestError } = await supabase
       .from('premium_requests')
@@ -80,19 +84,16 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     // 2. Update the user's profile
     const profileUpdates: any = {
       creator_verified: status === 'approved',
+      is_verified_creator: status === 'approved',
       creator_status: status,
       verification_status: status,
-      approved: status === 'approved' // Support both 'approved' and 'is_verified_creator' flags
+      payment_status: status === 'approved' ? 'verified' : 'rejected',
+      updated_at: new Date().toISOString()
     };
 
     if (status === 'approved') {
       profileUpdates.creator_since = new Date().toISOString();
       profileUpdates.creator_approved_at = new Date().toISOString();
-      profileUpdates.is_verified_creator = true;
-      profileUpdates.payment_status = 'verified';
-    } else {
-      profileUpdates.is_verified_creator = false;
-      profileUpdates.payment_status = 'rejected';
     }
 
     const { error: profileError } = await supabase
@@ -107,7 +108,13 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
 
     // 3. Ensure creator_profiles record exists if approved
     if (status === 'approved') {
-      await supabase.from('creator_profiles').upsert({ id: request.user_id });
+      const { error: creatorProfileError } = await supabase
+        .from('creator_profiles')
+        .upsert({ id: request.user_id });
+
+      if (creatorProfileError) {
+        console.error('[Admin] Error upserting creator_profile:', creatorProfileError);
+      }
     }
 
     console.log(`[Admin] Moderation workflow completed for user ${request.user_id}`);
