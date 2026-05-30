@@ -113,6 +113,64 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
   }
 }
 
+import { CREATOR_WHITELIST } from '@/lib/constants';
+
+export async function syncCreatorProfile() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user || !user.email) return { error: "Not authenticated" };
+
+    const isWhitelisted = CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+
+    if (!isWhitelisted) return { error: "Not whitelisted" };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_verified_creator')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.is_verified_creator) return { success: true };
+
+    console.log(`[Sync] Synchronizing creator profile for whitelisted user: ${user.email}`);
+
+    const profileUpdate = {
+      is_verified_creator: true,
+      creator_verified: true,
+      creator_status: 'approved',
+      verification_status: 'approved',
+      payment_status: 'verified',
+      creator_plan: 'premium',
+      role: 'creator',
+      permissions: ['all'],
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update(profileUpdate)
+      .eq('id', user.id);
+
+    if (profileError) throw profileError;
+
+    // Ensure creator_profiles record exists
+    await supabase
+      .from('creator_profiles')
+      .upsert({ id: user.id }, { onConflict: 'id' });
+
+    revalidatePath('/feed');
+    revalidatePath('/creator');
+    revalidatePath(`/u/${user.id}`);
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("[Profile] Sync error:", err);
+    return { error: err.message };
+  }
+}
+
 export async function updateProfile(data: {
   full_name?: string;
   professional_title?: string;

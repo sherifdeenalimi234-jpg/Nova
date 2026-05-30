@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   FileText,
@@ -10,7 +10,11 @@ import {
   Users,
   Eye,
   ArrowUpRight,
-  User
+  User,
+  ShieldCheck,
+  Zap,
+  Globe,
+  Award
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -23,6 +27,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 const data = [
   { name: 'Mon', views: 400 },
@@ -35,19 +40,86 @@ const data = [
 ];
 
 export default function CreatorDashboard() {
+  const [profile, setProfile] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setProfile(data);
+      }
+    }
+    fetchProfile();
+  }, []);
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 pb-10">
+      {/* Mobile Creator Identity Section */}
+      <section className="lg:hidden -mx-6 -mt-6 p-8 bg-gradient-to-b from-nova-cyan/5 to-transparent border-b border-white/5 mb-10">
+        <div className="flex flex-col items-center text-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-nova-cyan/20 blur-2xl rounded-full" />
+            <div className="relative w-24 h-24 rounded-[2rem] border border-white/10 p-1 bg-black/50 overflow-hidden">
+               {profile?.avatar_url ? (
+                 <img src={profile.avatar_url} alt="" className="w-full h-full object-cover rounded-[1.8rem]" />
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-[1.8rem]">
+                   <User size={32} className="text-white/10" />
+                 </div>
+               )}
+            </div>
+            {profile?.is_verified_creator && (
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-nova-cyan flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.4)] border-2 border-black">
+                <ShieldCheck size={20} className="text-black" />
+              </div>
+            )}
+          </div>
+
+          <div>
+             <div className="flex items-center justify-center gap-2 mb-2">
+                <h1 className="text-2xl font-black uppercase tracking-tight">{profile?.full_name || "Syncing..."}</h1>
+             </div>
+             <p className="text-nova-cyan text-[9px] font-black uppercase tracking-[0.4em] mb-4">
+                {profile?.professional_title || "Innovation Node"}
+             </p>
+
+             <div className="flex items-center justify-center gap-3">
+                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 flex flex-col items-center">
+                   <span className="text-[6px] text-white/20 uppercase tracking-widest mb-1">Creator Level</span>
+                   <div className="flex items-center gap-1.5">
+                      <Zap size={10} className="text-nova-cyan" />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-white/60">Level 1 Node</span>
+                   </div>
+                </div>
+                <div className="px-4 py-2 rounded-full bg-nova-cyan/10 border border-nova-cyan/20 flex flex-col items-center">
+                   <span className="text-[6px] text-nova-cyan/40 uppercase tracking-widest mb-1">Creator Status</span>
+                   <div className="flex items-center gap-1.5">
+                      <Award size={10} className="text-nova-cyan" />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-nova-cyan">Verified Creator</span>
+                   </div>
+                </div>
+             </div>
+          </div>
+        </div>
+      </section>
+
       {/* Welcome Section */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
+        <div className="hidden lg:block">
            <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Command Center</h1>
            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage your innovation ecosystem</p>
         </div>
-        <div className="flex gap-4">
-           <button className="px-6 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all">
+        <div className="flex flex-col sm:flex-row gap-4">
+           <button className="flex-1 px-6 py-4 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all">
               Initiate Project
            </button>
-           <button className="px-6 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+           <button className="flex-1 px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
               Publish Research
            </button>
         </div>
@@ -82,7 +154,7 @@ export default function CreatorDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Analytics Preview */}
-        <section className="lg:col-span-2 p-8 rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl">
+        <section className="lg:col-span-2 p-6 lg:p-8 rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl">
            <div className="flex items-center justify-between mb-8">
               <h2 className="text-sm font-black uppercase tracking-widest">Ecosystem Visibility</h2>
               <select className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-nova-cyan focus:ring-0">
