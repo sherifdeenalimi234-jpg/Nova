@@ -5,12 +5,10 @@ import { User, Shield, ArrowRight, Rocket, Briefcase, FileText, LayoutDashboard,
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import CreatorUpgradeModal from "./CreatorUpgradeModal";
 
 export default function ProfileTab() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -113,76 +111,32 @@ export default function ProfileTab() {
       </section>
 
       {/* Creator Studio Access Section */}
-      <section className="space-y-4">
-         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 ml-4">Ecosystem Production</h3>
+      {profile.is_verified_creator && (
+        <section className="space-y-4">
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 ml-4">Ecosystem Production</h3>
 
-         {profile.is_verified_creator ? (
-            <Link href="/creator" className="block group">
-               <div className="p-8 rounded-[2.5rem] border border-nova-cyan/20 bg-nova-cyan/5 backdrop-blur-xl relative overflow-hidden group-hover:border-nova-cyan/40 transition-all">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-nova-cyan/10 blur-[60px] -mr-20 -mt-20 group-hover:bg-nova-cyan/20 transition-all" />
+              <Link href="/creator" className="block group">
+                 <div className="p-8 rounded-[2.5rem] border border-nova-cyan/20 bg-nova-cyan/5 backdrop-blur-xl relative overflow-hidden group-hover:border-nova-cyan/40 transition-all">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-nova-cyan/10 blur-[60px] -mr-20 -mt-20 group-hover:bg-nova-cyan/20 transition-all" />
 
-                  <div className="flex items-center justify-between relative">
-                     <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-2xl bg-black border border-nova-cyan/20 flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(0,242,255,0.2)] transition-all">
-                           <LayoutDashboard size={24} className="text-nova-cyan" />
-                        </div>
-                        <div>
-                           <h4 className="text-lg font-black uppercase tracking-tight text-white mb-1">Open Creator Studio</h4>
-                           <p className="text-nova-cyan/60 text-[8px] font-black uppercase tracking-[0.2em]">Access Command Center</p>
-                        </div>
-                     </div>
-                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-nova-cyan group-hover:text-black transition-all">
-                        <ArrowRight size={18} />
-                     </div>
-                  </div>
-               </div>
-            </Link>
-         ) : (
-            <div className="p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl relative overflow-hidden">
-               <div className="flex items-center gap-5 mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
-                     <Rocket size={24} className="text-white/20" />
-                  </div>
-                  <div>
-                     <h4 className="text-lg font-black uppercase tracking-tight text-white/60 mb-1">Activate Creator Access</h4>
-                     <p className="text-white/20 text-[8px] font-black uppercase tracking-[0.2em]">Upgrade your node status</p>
-                  </div>
-               </div>
-               <p className="text-white/30 text-xs leading-relaxed mb-8">
-                  Unlock professional portfolio tools, research logs, survey systems, and ecosystem-wide visibility.
-               </p>
-               <button
-                 disabled={profile.creator_status === 'pending'}
-                 onClick={() => setIsUpgradeModalOpen(true)}
-                 className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
-               >
-                  {profile.creator_status === 'pending' ? (
-                    <>
-                       <Loader2 size={14} className="animate-spin" />
-                       Verification Pending
-                    </>
-                  ) : profile.creator_status === 'rejected' ? (
-                    "Re-apply for Access"
-                  ) : (
-                    "Begin Application"
-                  )}
-               </button>
-
-               {profile.creator_status === 'rejected' && (
-                  <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                     <AlertCircle size={14} className="text-red-500 shrink-0" />
-                     <p className="text-[9px] font-black uppercase tracking-widest text-red-500/70">Previous request declined. Please verify payment details and resubmit.</p>
-                  </div>
-               )}
-            </div>
-         )}
-      </section>
-
-      <CreatorUpgradeModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        user={profile}
-      />
+                    <div className="flex items-center justify-between relative">
+                       <div className="flex items-center gap-5">
+                          <div className="w-14 h-14 rounded-2xl bg-black border border-nova-cyan/20 flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(0,242,255,0.2)] transition-all">
+                             <LayoutDashboard size={24} className="text-nova-cyan" />
+                          </div>
+                          <div>
+                             <h4 className="text-lg font-black uppercase tracking-tight text-white mb-1">Open Creator Studio</h4>
+                             <p className="text-nova-cyan/60 text-[8px] font-black uppercase tracking-[0.2em]">Access Command Center</p>
+                          </div>
+                       </div>
+                       <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-nova-cyan group-hover:text-black transition-all">
+                          <ArrowRight size={18} />
+                       </div>
+                    </div>
+                 </div>
+              </Link>
+        </section>
+      )}
 
       {/* Content Stats */}
       <div className="grid grid-cols-3 gap-4">

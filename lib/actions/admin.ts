@@ -187,13 +187,43 @@ export async function addToWhitelist(email: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const normalizedEmail = email.toLowerCase();
+
   const { data, error } = await supabase
     .from('creator_whitelist')
-    .insert({ email: email.toLowerCase(), added_by: user?.id })
+    .insert({ email: normalizedEmail, added_by: user?.id })
     .select();
 
   if (!error) {
+    // Proactively update profile if user exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .single();
+
+    if (existingProfile) {
+      await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: true,
+          creator_verified: true,
+          creator_status: 'approved',
+          verification_status: 'approved',
+          payment_status: 'verified',
+          creator_since: new Date().toISOString(),
+          creator_approved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingProfile.id);
+
+      await supabase
+        .from('creator_profiles')
+        .upsert({ id: existingProfile.id });
+    }
+
     revalidatePath('/admin/whitelist');
+    revalidatePath('/admin/users');
   }
 
   return { data, error };
@@ -201,13 +231,41 @@ export async function addToWhitelist(email: string) {
 
 export async function removeFromWhitelist(email: string) {
   const supabase = await createClient();
+  const normalizedEmail = email.toLowerCase();
+
   const { error } = await supabase
     .from('creator_whitelist')
     .delete()
-    .eq('email', email.toLowerCase());
+    .eq('email', normalizedEmail);
 
   if (!error) {
+    // Optionally revoke access if removed from whitelist
+    // But maybe safer to just leave it if they were already approved?
+    // User request says: "If the email does not exist in the whitelist: User remains a normal user."
+    // This implies we should revoke access.
+
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .single();
+
+    if (existingProfile) {
+      await supabase
+        .from('profiles')
+        .update({
+          is_verified_creator: false,
+          creator_verified: false,
+          creator_status: 'free',
+          verification_status: null,
+          payment_status: 'unpaid',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingProfile.id);
+    }
+
     revalidatePath('/admin/whitelist');
+    revalidatePath('/admin/users');
   }
 
   return { error };
