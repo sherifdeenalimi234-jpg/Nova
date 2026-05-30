@@ -11,6 +11,7 @@ import ProfileTab from "@/components/feed/ProfileTab";
 import { createClient } from "@/lib/supabase/client";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { CREATOR_WHITELIST } from "@/lib/constants";
 
 export default function FeedPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,7 +39,7 @@ export default function FeedPage() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_verified_creator, is_admin')
+          .select('is_verified_creator, is_admin, creator_verified, creator_status, verification_status')
           .eq('id', session.user.id)
           .single();
 
@@ -48,8 +49,35 @@ export default function FeedPage() {
           return;
         }
 
-        if (profile?.is_verified_creator) {
+        // Check whitelist
+        const isWhitelisted = session.user.email && CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(session.user.email.toLowerCase());
+
+        if (isWhitelisted || profile?.is_verified_creator || profile?.creator_verified || profile?.creator_status === 'approved' || profile?.verification_status === 'approved') {
           setIsCreator(true);
+
+          // Synchronization check: If whitelisted but flag is missing in DB, update it
+          if (isWhitelisted && !profile?.is_verified_creator) {
+            console.log("[Sync] Whitelisted creator missing flag, updating profile...");
+            await supabase
+              .from('profiles')
+              .update({
+                is_verified_creator: true,
+                creator_verified: true,
+                creator_status: 'approved',
+                verification_status: 'approved',
+                payment_status: 'verified',
+                creator_plan: 'premium',
+                role: 'creator',
+                permissions: ['all'],
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', session.user.id);
+
+            // Also ensure creator_profiles record exists
+            await supabase
+              .from('creator_profiles')
+              .upsert({ id: session.user.id }, { onConflict: 'id' });
+          }
         }
       } catch (err) {
         console.error("Auth check error:", err);
@@ -177,7 +205,7 @@ export default function FeedPage() {
             </div>
           )}
 
-          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isCreator={isCreator} />
         </motion.div>
       </div>
     </main>

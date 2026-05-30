@@ -74,8 +74,11 @@ export async function GET(request: Request) {
           profileData.creator_verified = true;
           profileData.creator_status = 'approved';
           profileData.verification_status = 'approved';
-          profileData.payment_status = 'verified';
           profileData.creator_since = profileData.creator_since || new Date().toISOString();
+          profileData.payment_status = 'verified';
+          profileData.creator_plan = 'premium';
+          profileData.role = 'creator';
+          profileData.permissions = ['all'];
         }
 
         // Ensure profile exists

@@ -10,9 +10,10 @@ import { useRouter } from "next/navigation";
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isCreator?: boolean;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isCreator = false }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
@@ -26,6 +27,16 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   const moreItems = [
+    // Creator Specific Items
+    ...(isCreator ? [
+      { label: "Creator Studio", icon: LayoutGrid, href: "/creator" },
+      { label: "Creator Dashboard", icon: BarChart3, href: "/creator" },
+      { label: "Creator Profile", icon: User, href: "/creator/portfolio" },
+      { label: "Creator Projects", icon: LayoutGrid, href: "/creator/projects" },
+      { label: "Creator Research", icon: ClipboardList, href: "/creator/posts" },
+      { label: "Creator Surveys", icon: ClipboardList, href: "/creator/surveys" },
+      { label: "Creator Analytics", icon: BarChart3, href: "/creator/analytics" },
+    ] : []),
     { label: "Projects", icon: LayoutGrid, href: "/projects" },
     { label: "Surveys", icon: ClipboardList, href: "/surveys" },
     { label: "Gallery", icon: ImageIcon, href: "/gallery" },
