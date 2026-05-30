@@ -25,11 +25,11 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending');
 
-  // Creator Protocol Stats
+  // Creator Protocol Stats - Sync with dash filter
   const { count: pendingPremiumCount } = await supabase
     .from('premium_requests')
     .select('*', { count: 'exact', head: true })
-    .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending');
+    .or('status.eq.pending,status.is.null');
 
   const { count: approvedPremiumCount } = await supabase
     .from('premium_requests')
