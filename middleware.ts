@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { ADMIN_EMAIL } from '@/lib/constants'
+import { ADMIN_EMAIL, CREATOR_WHITELIST } from '@/lib/constants'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -56,6 +56,10 @@ export async function middleware(request: NextRequest) {
 
   const isVerifiedCreator = async () => {
     if (!user) return false;
+    // Check if email is in whitelist for immediate access
+    if (user.email && CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
+      return true;
+    }
     const p = await getCachedProfile();
     return p?.is_verified_creator;
   }

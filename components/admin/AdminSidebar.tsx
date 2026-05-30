@@ -14,7 +14,8 @@ import {
   X,
   LogOut,
   Bell,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react';
 import LogoutButton from './LogoutButton';
 import { cn } from '@/lib/utils';
@@ -23,7 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Creator Requests', href: '/admin/creators', icon: ShieldCheck },
+  { name: 'Email Whitelist', href: '/admin/whitelist', icon: Mail },
   { name: 'Posts', href: '/admin/content', icon: FileText },
   { name: 'Surveys', href: '/admin/surveys', icon: BarChart3 },
   { name: 'Analytics', href: '/admin/analytics', icon: Activity },

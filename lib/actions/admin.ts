@@ -173,6 +173,46 @@ export async function suspendUser(userId: string) {
   return { error };
 }
 
+export async function getWhitelist() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('creator_whitelist')
+    .select('*')
+    .order('added_at', { ascending: false });
+
+  return { data, error };
+}
+
+export async function addToWhitelist(email: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('creator_whitelist')
+    .insert({ email: email.toLowerCase(), added_by: user?.id })
+    .select();
+
+  if (!error) {
+    revalidatePath('/admin/whitelist');
+  }
+
+  return { data, error };
+}
+
+export async function removeFromWhitelist(email: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('creator_whitelist')
+    .delete()
+    .eq('email', email.toLowerCase());
+
+  if (!error) {
+    revalidatePath('/admin/whitelist');
+  }
+
+  return { error };
+}
+
 export async function banUser(userId: string) {
   const supabase = await createClient();
   const { error } = await supabase

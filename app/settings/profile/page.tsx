@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User, Save, Loader2, Globe, Info, Camera, Zap, ChevronRight } from 'lucide-react';
 import { uploadFile } from '@/lib/supabase/storage';
-import CreatorUpgradeModal from '@/components/feed/CreatorUpgradeModal';
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(true);
@@ -13,7 +12,6 @@ export default function ProfileSettings() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [username, setUsername] = useState('');
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const supabase = createClient();
 
@@ -181,47 +179,8 @@ export default function ProfileSettings() {
               )}
               <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Synchronize Node</span>
            </button>
-
-           {/* Creator Access Section */}
-           {!profile?.is_verified_creator && (
-              <div className="mt-12 pt-12 border-t border-white/5">
-                 <div className="mb-6">
-                    <h2 className="text-lg font-black tracking-widest uppercase flex items-center gap-3">
-                       <Zap className="text-nova-purple" size={20} />
-                       Activate Creator Access
-                    </h2>
-                    <p className="text-white/40 text-xs mt-2 leading-relaxed">
-                       Unlock professional tools: research uploads, innovation showcase, analytics, and direct collaboration.
-                    </p>
-                 </div>
-
-                 {profile?.creator_status === 'pending' ? (
-                    <div className="p-8 rounded-3xl bg-nova-cyan/5 border border-nova-cyan/20 text-center">
-                       <div className="w-12 h-12 rounded-2xl bg-black border border-nova-cyan/20 flex items-center justify-center mx-auto mb-4">
-                          <Loader2 size={24} className="text-nova-cyan animate-spin" />
-                       </div>
-                       <h3 className="text-sm font-black uppercase tracking-widest mb-1 text-white">Verification Pending</h3>
-                       <p className="text-[8px] text-white/40 uppercase tracking-[0.3em]">Protocol active • Awaiting authentication</p>
-                    </div>
-                 ) : (
-                    <button
-                       onClick={() => setIsUpgradeModalOpen(true)}
-                       className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] hover:bg-nova-cyan transition-all flex items-center justify-center gap-3"
-                    >
-                       {profile?.creator_status === 'rejected' ? 'Re-apply for Access' : 'Begin Application'}
-                       <ChevronRight size={14} />
-                    </button>
-                 )}
-              </div>
-           )}
         </div>
       </div>
-
-      <CreatorUpgradeModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        user={profile}
-      />
     </div>
   );
 }

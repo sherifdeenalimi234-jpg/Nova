@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 // The client you created in Step 3
 import { createClient } from '@/lib/supabase/server'
-import { ADMIN_EMAIL } from '@/lib/constants'
+import { ADMIN_EMAIL, CREATOR_WHITELIST } from '@/lib/constants'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -46,15 +46,49 @@ export async function GET(request: Request) {
         }
         redirectUrl = '/admin'
       } else {
-        // Ensure standard profile exists
+        // Check if user is in creator whitelist (hardcoded or database)
+        const isHardcodedCreator = user.email && CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+
+        let isDynamicCreator = false;
+        if (user.email) {
+          const { data: whitelistEntry } = await supabase
+            .from('creator_whitelist')
+            .select('email')
+            .eq('email', user.email.toLowerCase())
+            .maybeSingle();
+          isDynamicCreator = !!whitelistEntry;
+        }
+
+        const isWhitelistedCreator = isHardcodedCreator || isDynamicCreator;
+
+        const profileData: any = {
+          id: user.id,
+          full_name: user.user_metadata.full_name || user.email?.split('@')[0],
+          avatar_url: user.user_metadata.avatar_url,
+          updated_at: new Date().toISOString()
+        };
+
+        if (isWhitelistedCreator) {
+          console.log(`Whitelisted creator detected: ${user.email}, auto-granting access...`);
+          profileData.is_verified_creator = true;
+          profileData.creator_verified = true;
+          profileData.creator_status = 'approved';
+          profileData.verification_status = 'approved';
+          profileData.payment_status = 'verified';
+          profileData.creator_since = profileData.creator_since || new Date().toISOString();
+        }
+
+        // Ensure profile exists
         await supabase
           .from('profiles')
-          .upsert({
-            id: user.id,
-            full_name: user.user_metadata.full_name || user.email?.split('@')[0],
-            avatar_url: user.user_metadata.avatar_url,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' })
+          .upsert(profileData, { onConflict: 'id' });
+
+        // If whitelisted, ensure creator_profiles record exists
+        if (isWhitelistedCreator) {
+          await supabase
+            .from('creator_profiles')
+            .upsert({ id: user.id }, { onConflict: 'id' });
+        }
 
         // If "next" was "/" (default from many places), ensure normal users go to /feed
         if (redirectUrl === '/') redirectUrl = '/feed'
