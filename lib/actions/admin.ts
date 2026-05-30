@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { ADMIN_EMAIL } from '@/lib/constants';
 
 export async function moderatePost(postId: string, status: 'approved' | 'rejected') {
   const supabase = await createClient();
@@ -49,7 +50,8 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
       .eq('id', user.id)
       .single();
 
-    if (!adminProfile?.is_admin) return { error: "Unauthorized access." };
+    const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || adminProfile?.is_admin;
+    if (!isAdmin) return { error: "Unauthorized access." };
 
     console.log(`[Admin] Initiating moderation workflow for ${requestId} -> ${status}`);
 
@@ -79,11 +81,13 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     const profileUpdates: any = {
       creator_verified: status === 'approved',
       creator_status: status,
-      verification_status: status
+      verification_status: status,
+      approved: status === 'approved' // Support both 'approved' and 'is_verified_creator' flags
     };
 
     if (status === 'approved') {
       profileUpdates.creator_since = new Date().toISOString();
+      profileUpdates.creator_approved_at = new Date().toISOString();
       profileUpdates.is_verified_creator = true;
       profileUpdates.payment_status = 'verified';
     } else {

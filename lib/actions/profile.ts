@@ -52,7 +52,7 @@ export async function requestCreatorAccess(paymentRef: string, proofUrl?: string
       payment_note: note,
       status: 'pending',
       approval_status: 'pending',
-      verification_status: 'under_review'
+      verification_status: 'pending'
     };
 
     console.log("[Profile] Data to insert into premium_requests:", payload);
