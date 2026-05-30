@@ -31,6 +31,8 @@ type Step = "pitch" | "payment" | "proof" | "success";
 export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUpgradeModalProps) {
   const [step, setStep] = useState<Step>("pitch");
   const [loading, setLoading] = useState(false);
+  const [isExisting, setIsExisting] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -38,6 +40,34 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
   const [paymentRef, setPaymentRef] = useState("");
   const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (isOpen && user?.id) {
+      const checkExistingRequest = async () => {
+        setCheckingExisting(true);
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('premium_requests')
+            .select('status, approval_status, verification_status')
+            .eq('user_id', user.id)
+            .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending')
+            .maybeSingle();
+
+          if (data) {
+            setIsExisting(true);
+            setStep("success");
+          }
+        } catch (err) {
+          console.error("Error checking existing request:", err);
+        } finally {
+          setCheckingExisting(false);
+        }
+      };
+      checkExistingRequest();
+    }
+  }, [isOpen, user?.id]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -156,7 +186,18 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               <AnimatePresence mode="wait">
-                {step === "pitch" && (
+                {checkingExisting ? (
+                  <motion.div
+                    key="checking"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-20 space-y-4"
+                  >
+                    <Loader2 size={32} className="text-nova-cyan animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Synchronizing Protocol Status...</p>
+                  </motion.div>
+                ) : step === "pitch" && (
                   <motion.div
                     key="pitch"
                     initial={{ opacity: 0, x: 20 }}
@@ -382,9 +423,11 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
                     </div>
 
                     <div className="space-y-4">
-                      <h2 className="text-2xl font-black uppercase tracking-tight">Transmission Complete</h2>
+                      <h2 className="text-2xl font-black uppercase tracking-tight">
+                        {isExisting ? "Request Logged" : "Transmission Complete"}
+                      </h2>
                       <p className="text-white/40 text-sm leading-relaxed">
-                        Your verification request has been logged into the Nova ecosystem. An administrator will review your credentials shortly.
+                        Your creator verification request is currently under review. Please wait for admin approval.
                       </p>
                     </div>
 

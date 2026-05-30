@@ -14,11 +14,13 @@ import {
   ChevronRight,
   RefreshCcw,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  Maximize2
 } from 'lucide-react';
 import { moderatePremiumRequest } from '@/lib/actions/admin';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 interface PremiumRequest {
@@ -47,6 +49,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
   const [requests, setRequests] = useState(initialRequests);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const router = useRouter();
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
@@ -90,75 +93,144 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
         />
       </div>
 
-      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
         {filteredRequests.map((req) => (
-          <div key={req.id} className="p-5 rounded-3xl bg-white/2 border border-white/5 flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-nova-purple/10 flex items-center justify-center border border-nova-purple/20 overflow-hidden">
-                {req.profiles?.avatar_url ? (
-                  <img src={req.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={18} className="text-nova-purple/40" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-black text-white truncate">{req.profiles?.full_name || 'ANONYMOUS'}</h4>
-                <p className="text-[10px] text-white/40 truncate">{req.profiles?.email || 'NO EMAIL'}</p>
+          <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            key={req.id}
+            className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 flex flex-col gap-6 hover:bg-white/[0.04] transition-all group"
+          >
+            {/* Header: Profile Info */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-nova-purple/10 flex items-center justify-center border border-nova-purple/20 overflow-hidden shrink-0">
+                  {req.profiles?.avatar_url ? (
+                    <img src={req.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={24} className="text-nova-purple/40" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-base font-black text-white truncate tracking-tight">{req.profiles?.full_name || 'ANONYMOUS'}</h4>
+                  <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">{req.profiles?.email || 'NO EMAIL'}</p>
+                </div>
               </div>
               <div className={cn(
-                "px-2 py-1 rounded-md text-[8px] font-black uppercase",
-                req.status === 'approved' ? "bg-nova-green/20 text-nova-green" :
-                req.status === 'rejected' ? "bg-red-500/20 text-red-500" : "bg-white/10 text-white/40"
+                "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                req.status === 'approved' ? "bg-nova-green/10 text-nova-green border-nova-green/20" :
+                req.status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-white/5 text-white/40 border-white/10"
               )}>
                 {req.status || 'PENDING'}
               </div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] text-nova-cyan font-mono font-bold">REF: {req.payment_reference}</p>
-              {req.payment_note && <p className="text-[10px] text-white/60 italic leading-relaxed mt-1">"{req.payment_note}"</p>}
+            {/* Submission Meta */}
+            <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-nova-cyan mb-1">Submitted</p>
+                <div className="flex items-center gap-2 text-white/60">
+                   <Calendar size={12} />
+                   <span className="text-[10px] font-bold uppercase tracking-widest">
+                      {new Date(req.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                   </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-nova-cyan mb-1">Payment Ref</p>
+                <p className="text-[10px] font-mono font-bold text-white truncate">{req.payment_reference}</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <a
-                href={req.proof_url || req.verification_doc_url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[9px] font-black uppercase hover:bg-white/10 transition-all"
+            {req.payment_note && (
+               <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1">Note</p>
+                  <p className="text-[10px] text-white/60 italic leading-relaxed">"{req.payment_note}"</p>
+               </div>
+            )}
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                disabled={!req.proof_url && !req.verification_doc_url}
+                onClick={() => {
+                   const url = req.proof_url || req.verification_doc_url;
+                   if (url) setPreviewUrl(url);
+                }}
+                className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FileText size={12} /> View Proof
-              </a>
+                <Maximize2 size={14} /> {(!req.proof_url && !req.verification_doc_url) ? "No Proof Uploaded" : "Preview Proof"}
+              </button>
               <Link
                 href={`/u/${req.user_id}`}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[9px] font-black uppercase hover:bg-white/10 transition-all"
+                className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
               >
-                <Eye size={12} /> View Profile
+                <User size={14} /> View Profile
               </Link>
 
               {(!req.status || req.status === 'pending') && (
                 processingId === req.id ? (
-                  <div className="col-span-2 flex justify-center py-2"><Loader2 size={20} className="animate-spin text-nova-purple" /></div>
+                  <div className="col-span-2 flex justify-center py-2"><Loader2 size={24} className="animate-spin text-nova-purple" /></div>
                 ) : (
                   <>
                     <button
                       onClick={() => handleAction(req.id, 'approved')}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-nova-cyan/10 text-nova-cyan text-[9px] font-black uppercase border border-nova-cyan/20 hover:bg-nova-cyan/20"
+                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.3)] transition-all"
                     >
-                      <ShieldCheck size={12} /> Approve
+                      <ShieldCheck size={14} /> Approve
                     </button>
                     <button
                       onClick={() => handleAction(req.id, 'rejected')}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 text-red-500 text-[9px] font-black uppercase border border-red-500/20 hover:bg-red-500/20"
+                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/20 transition-all"
                     >
-                      <XCircle size={12} /> Reject
+                      <XCircle size={14} /> Reject
                     </button>
                   </>
                 )
               )}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
+
+      {/* Proof Preview Modal */}
+      <AnimatePresence>
+        {previewUrl && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPreviewUrl(null)}
+              className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl w-full h-full bg-[#0a0a0b] rounded-[2.5rem] border border-white/10 overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-widest">Verification Proof Preview</h3>
+                <button
+                  onClick={() => setPreviewUrl(null)}
+                  className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-black/50">
+                <img
+                  src={previewUrl}
+                  alt="Proof"
+                  className="max-w-full max-h-full object-contain shadow-2xl rounded-xl"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
