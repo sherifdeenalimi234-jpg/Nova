@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getWhitelist, addToWhitelist, removeFromWhitelist } from '@/lib/actions/admin';
 import { CREATOR_WHITELIST } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import { Mail, Plus, Trash2, Loader2, ShieldCheck, Search, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -198,8 +199,4 @@ export default function WhitelistPage() {
       </motion.div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

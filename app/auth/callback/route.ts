@@ -75,7 +75,18 @@ export async function GET(request: Request) {
           profileData.creator_status = 'approved';
           profileData.verification_status = 'approved';
           profileData.payment_status = 'verified';
-          profileData.creator_since = profileData.creator_since || new Date().toISOString();
+        }
+
+        // Check for existing profile to preserve fields like creator_since
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('creator_since, creator_approved_at')
+          .eq('id', user.id)
+          .single();
+
+        if (isWhitelistedCreator) {
+          profileData.creator_since = existingProfile?.creator_since || new Date().toISOString();
+          profileData.creator_approved_at = existingProfile?.creator_approved_at || new Date().toISOString();
         }
 
         // Ensure profile exists

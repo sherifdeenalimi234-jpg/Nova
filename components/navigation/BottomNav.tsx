@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Home, Compass, Cpu, User, MoreHorizontal, LayoutGrid, ClipboardList, ImageIcon, BarChart3, Bell, Settings, HelpCircle, LogOut, ChevronLeft } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Home, Compass, Cpu, User, MoreHorizontal, LayoutGrid, ClipboardList, ImageIcon, BarChart3, Bell, Settings, HelpCircle, LogOut, ChevronLeft, Rocket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -15,7 +15,25 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    async function checkCreatorStatus() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_verified_creator')
+          .eq('id', user.id)
+          .single();
+
+        setIsCreator(!!profile?.is_verified_creator);
+      }
+    }
+    checkCreatorStatus();
+  }, []);
 
   const tabs = [
     { id: "home", icon: Home, label: "Home" },
@@ -26,10 +44,17 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   const moreItems = [
-    { label: "Projects", icon: LayoutGrid, href: "/projects" },
-    { label: "Surveys", icon: ClipboardList, href: "/surveys" },
+    ...(isCreator ? [
+      { label: "Studio", icon: Rocket, href: "/creator" },
+      { label: "Dashboard", icon: LayoutGrid, href: "/creator" },
+      { label: "Projects", icon: ClipboardList, href: "/creator/projects" },
+      { label: "Research", icon: Cpu, href: "/creator/posts" },
+      { label: "Surveys", icon: Settings, href: "/creator/surveys" },
+      { label: "Analytics", icon: BarChart3, href: "/creator/analytics" },
+    ] : []),
+    { label: "Feed Projects", icon: LayoutGrid, href: "/projects" },
+    { label: "Feed Surveys", icon: ClipboardList, href: "/surveys" },
     { label: "Gallery", icon: ImageIcon, href: "/gallery" },
-    { label: "Analytics", icon: BarChart3, href: "/analytics" },
     { label: "Notifications", icon: Bell, href: "/notifications" },
     { label: "Settings", icon: Settings, href: "/settings/profile" },
     { label: "Help Center", icon: HelpCircle, href: "/help" },
