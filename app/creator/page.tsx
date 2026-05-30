@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
   Plus,
   FileText,
@@ -35,8 +36,67 @@ const data = [
 ];
 
 export default function CreatorDashboard() {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*, creator_profiles(*)')
+          .eq('id', user.id)
+          .single();
+        setProfile(data);
+      }
+      setLoading(false);
+    };
+    fetchProfile();
+  }, []);
+
   return (
     <div className="space-y-10">
+      {/* Creator Status Section - Mobile Only */}
+      {!loading && profile && (
+        <section className="lg:hidden p-6 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-nova-cyan/5 to-nova-purple/5 backdrop-blur-xl mb-6">
+           <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-2xl border border-white/10 overflow-hidden bg-white/5">
+                    {profile.avatar_url ? (
+                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                       <div className="w-full h-full flex items-center justify-center">
+                          <User size={20} className="text-white/20" />
+                       </div>
+                    )}
+                 </div>
+                 <div>
+                    <h2 className="text-sm font-black uppercase tracking-widest">{profile.full_name}</h2>
+                    <p className="text-[9px] text-nova-cyan font-black uppercase tracking-[0.2em]">{profile.professional_title || 'Innovation Architect'}</p>
+                 </div>
+              </div>
+              {profile.verification_status === 'approved' && (
+                 <div className="px-3 py-1 rounded-full bg-nova-cyan/20 border border-nova-cyan/30">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-nova-cyan">Verified</span>
+                 </div>
+              )}
+           </div>
+
+           <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Node Level</p>
+                 <p className="text-xs font-black">Level 1 Node</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Status</p>
+                 <p className="text-xs font-black text-nova-green">ACTIVE</p>
+              </div>
+           </div>
+        </section>
+      )}
+
       {/* Welcome Section */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>

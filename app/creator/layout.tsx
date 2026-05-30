@@ -1,4 +1,6 @@
 import React from 'react';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import {
   LayoutDashboard,
   FileText,
@@ -14,12 +16,26 @@ import {
   Globe
 } from 'lucide-react';
 import Link from 'next/link';
+import MobileNav from '@/components/creator/MobileNav';
 
-export default function CreatorLayout({
+export default async function CreatorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    redirect('/');
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*, creator_profiles(*)')
+    .eq('id', user.id)
+    .single();
+
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
     { name: 'Posts', icon: FileText, href: '/creator/posts' },
@@ -73,9 +89,9 @@ export default function CreatorLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-72 min-h-screen">
+      <main className="flex-1 lg:ml-72 min-h-screen pt-16 lg:pt-0 pb-20 lg:pb-0">
         {/* Top Header */}
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-xl sticky top-0 z-40">
+        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-xl sticky top-0 z-40 hidden lg:flex">
            <div>
               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Ecosystem Production</h2>
            </div>
@@ -99,14 +115,8 @@ export default function CreatorLayout({
         </div>
       </main>
 
-      {/* Mobile Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-50 flex items-center justify-around px-4">
-         {menuItems.slice(0, 5).map((item) => (
-           <Link key={item.name} href={item.href} className="p-3 text-white/40 hover:text-nova-cyan transition-all">
-              <item.icon size={20} />
-           </Link>
-         ))}
-      </div>
+      {/* Mobile Navigation & Top Bar */}
+      <MobileNav profile={profile} />
     </div>
   );
 }
