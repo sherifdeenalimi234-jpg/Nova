@@ -25,10 +25,21 @@ export default async function AdminDashboard() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending');
 
+  // Creator Protocol Stats
   const { count: pendingPremiumCount } = await supabase
     .from('premium_requests')
     .select('*', { count: 'exact', head: true })
     .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending');
+
+  const { count: approvedPremiumCount } = await supabase
+    .from('premium_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'approved');
+
+  const { count: rejectedPremiumCount } = await supabase
+    .from('premium_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'rejected');
 
   return (
     <DashboardContent
@@ -37,6 +48,8 @@ export default async function AdminDashboard() {
       activeSurveys={activeSurveys || 0}
       pendingPostsCount={pendingPostsCount || 0}
       pendingPremiumCount={pendingPremiumCount || 0}
+      approvedPremiumCount={approvedPremiumCount || 0}
+      rejectedPremiumCount={rejectedPremiumCount || 0}
     />
   );
 }
