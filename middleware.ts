@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
     if (profile) return profile;
     const { data } = await supabase
       .from('profiles')
-      .select('is_admin, is_verified_creator')
+      .select('is_admin, is_verified_creator, creator_verified, creator_status, verification_status')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -57,11 +57,12 @@ export async function middleware(request: NextRequest) {
   const isVerifiedCreator = async () => {
     if (!user) return false;
     // Check if email is in whitelist for immediate access
-    if (user.email && CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
+    const isWhitelisted = user.email && CREATOR_WHITELIST.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+    if (isWhitelisted) {
       return true;
     }
     const p = await getCachedProfile();
-    return p?.is_verified_creator;
+    return p?.is_verified_creator || p?.creator_verified || p?.creator_status === 'approved' || p?.verification_status === 'approved';
   }
 
   // 1. Redirect authenticated users away from landing page
