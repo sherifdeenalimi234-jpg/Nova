@@ -32,6 +32,7 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
   const [step, setStep] = useState<Step>("pitch");
   const [loading, setLoading] = useState(false);
   const [isExisting, setIsExisting] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -52,11 +53,15 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
             .from('premium_requests')
             .select('status, approval_status, verification_status')
             .eq('user_id', user.id)
-            .or('status.eq.pending,approval_status.eq.pending,verification_status.eq.pending')
+            .or('status.in.(pending,approved),approval_status.in.(pending,approved),verification_status.in.(pending,approved)')
+            .order('created_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
 
           if (data) {
+            const approved = data.status === 'approved' || data.approval_status === 'approved' || data.verification_status === 'approved';
             setIsExisting(true);
+            setIsApproved(approved);
             setStep("success");
           }
         } catch (err) {
@@ -424,10 +429,12 @@ export default function CreatorUpgradeModal({ isOpen, onClose, user }: CreatorUp
 
                     <div className="space-y-4">
                       <h2 className="text-2xl font-black uppercase tracking-tight">
-                        {isExisting ? "Request Logged" : "Transmission Complete"}
+                        {isApproved ? "Access Verified" : isExisting ? "Request Logged" : "Transmission Complete"}
                       </h2>
                       <p className="text-white/40 text-sm leading-relaxed">
-                        Your creator verification request is currently under review. Please wait for admin approval.
+                        {isApproved
+                          ? "Your node is currently verified for creator access. You have full access to professional ecosystem tools."
+                          : "Your creator verification request is currently under review. Please wait for admin approval."}
                       </p>
                     </div>
 
