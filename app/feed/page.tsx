@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CREATOR_WHITELIST } from "@/lib/constants";
+import { syncCreatorProfile } from "@/lib/actions/profile";
 
 export default function FeedPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -55,28 +56,10 @@ export default function FeedPage() {
         if (isWhitelisted || profile?.is_verified_creator || profile?.creator_verified || profile?.creator_status === 'approved' || profile?.verification_status === 'approved') {
           setIsCreator(true);
 
-          // Synchronization check: If whitelisted but flag is missing in DB, update it
+          // Synchronization check: If whitelisted but flag is missing in DB, update it via server action
           if (isWhitelisted && !profile?.is_verified_creator) {
-            console.log("[Sync] Whitelisted creator missing flag, updating profile...");
-            await supabase
-              .from('profiles')
-              .update({
-                is_verified_creator: true,
-                creator_verified: true,
-                creator_status: 'approved',
-                verification_status: 'approved',
-                payment_status: 'verified',
-                creator_plan: 'premium',
-                role: 'creator',
-                permissions: ['all'],
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', session.user.id);
-
-            // Also ensure creator_profiles record exists
-            await supabase
-              .from('creator_profiles')
-              .upsert({ id: session.user.id }, { onConflict: 'id' });
+            console.log("[Sync] Whitelisted creator missing flag, triggering server sync...");
+            await syncCreatorProfile();
           }
         }
       } catch (err) {
