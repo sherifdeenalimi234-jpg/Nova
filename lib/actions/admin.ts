@@ -53,8 +53,6 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
     const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || adminProfile?.is_admin;
     if (!isAdmin) return { error: "Unauthorized access." };
 
-    console.log(`[Admin] Initiating moderation workflow for ${requestId} -> ${status}`);
-
     // 1. Update the request status in premium_requests
     const requestUpdates: any = {
       status,
@@ -116,8 +114,6 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
         console.error('[Admin] Error upserting creator_profile:', creatorProfileError);
       }
     }
-
-    console.log(`[Admin] Moderation workflow completed for user ${request.user_id}`);
 
     revalidatePath('/admin');
     revalidatePath('/admin/creators');
