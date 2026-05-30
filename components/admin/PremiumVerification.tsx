@@ -121,10 +121,10 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-base font-black text-white truncate tracking-tight">
-                    {req.profiles?.full_name || (req.user_id ? `USER: ${req.user_id.slice(0, 8)}...` : 'ANONYMOUS')}
+                    {req.profiles?.full_name || (req.user_id ? `IDENT: ${req.user_id.slice(0, 8)}` : 'UNKNOWN NODE')}
                   </h4>
                   <p className="text-[10px] text-white/40 truncate font-medium uppercase tracking-widest">
-                    {req.profiles?.email || 'PROFILE DATA UNAVAILABLE'}
+                    {req.profiles?.email || 'OFFLINE DATA'}
                   </p>
                 </div>
               </div>
@@ -167,7 +167,13 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 disabled={!req.proof_url && !req.verification_doc_url}
                 onClick={() => {
                    const url = req.proof_url || req.verification_doc_url;
-                   if (url) setPreviewUrl(url);
+                   if (url) {
+                      if (url.toLowerCase().endsWith('.pdf')) {
+                         window.open(url, '_blank');
+                      } else {
+                         setPreviewUrl(url);
+                      }
+                   }
                 }}
                 className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
