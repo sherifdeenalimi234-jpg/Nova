@@ -87,7 +87,8 @@ export async function moderatePremiumRequest(requestId: string, status: 'approve
         payment_status: 'verified',
         verification_status: 'verified',
         creator_approved_at: new Date().toISOString(),
-        creator_since: new Date().toISOString()
+        creator_since: new Date().toISOString(),
+        creator_plan: 'premium'
       };
 
       const { error: profileError } = await supabase
