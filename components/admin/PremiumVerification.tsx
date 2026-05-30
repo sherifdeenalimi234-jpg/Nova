@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface PremiumRequest {
   id: string;
   user_id: string;
-  profiles: {
+  profiles?: {
     full_name: string;
     avatar_url: string | null;
     email?: string;
@@ -32,6 +32,11 @@ interface PremiumRequest {
   proof_url?: string;
   payment_note?: string;
   category?: string;
+  status: string;
+  approval_status: string;
+  verification_status: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
   approved_at?: string;
 }
 
@@ -55,8 +60,9 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
   };
 
   const filteredRequests = requests.filter(r =>
-    r.profiles.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -67,7 +73,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
           <p className="text-[9px] md:text-[10px] text-white/30 uppercase tracking-widest mt-2 font-medium">Awaiting authentication</p>
         </div>
         <span className="px-3 py-1 rounded-full bg-nova-purple/10 border border-nova-purple/20 text-[9px] font-black text-nova-purple uppercase tracking-widest">
-          {requests.length} PENDING
+          {filteredRequests.length} PENDING
         </span>
       </div>
 
@@ -75,7 +81,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-nova-purple transition-colors" />
         <input
           type="text"
-          placeholder="Filter applications..."
+          placeholder="Filter applications by name, email or reference..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-white/2 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-[10px] uppercase tracking-widest text-white placeholder:text-white/20 outline-none focus:border-nova-purple/50 transition-all"
@@ -103,7 +109,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
 
               <div className="flex items-center gap-4 mb-5 relative z-10">
                 <div className="w-12 h-12 rounded-2xl bg-nova-purple/10 flex items-center justify-center border border-nova-purple/20 overflow-hidden shrink-0">
-                   {req.profiles.avatar_url ? (
+                   {req.profiles?.avatar_url ? (
                      <img src={req.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                    ) : (
                      <User size={20} className="text-nova-purple/40" />
@@ -111,13 +117,13 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                 </div>
                 <div className="flex-1 min-w-0">
                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-sm font-black text-white truncate">{req.profiles.full_name}</h4>
+                      <h4 className="text-sm font-black text-white truncate">{req.profiles?.full_name || 'Anonymous User'}</h4>
                       <span className="px-1.5 py-0.5 rounded-md bg-nova-purple/20 text-nova-purple text-[8px] font-black uppercase tracking-tighter">
                          {req.category || 'INNOVATOR'}
                       </span>
                    </div>
                    <div className="flex flex-col gap-0.5">
-                      <p className="text-[9px] text-white/40 uppercase tracking-widest font-medium truncate">{req.profiles.email || 'No email associated'}</p>
+                      <p className="text-[9px] text-white/40 uppercase tracking-widest font-medium truncate">{req.profiles?.email || 'No email associated'}</p>
                       <p className="text-[10px] text-nova-cyan uppercase tracking-widest font-mono truncate">REF: {req.payment_reference}</p>
                    </div>
                 </div>
@@ -125,7 +131,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
 
               <div className="grid grid-cols-2 gap-3 relative z-10">
                  <button
-                   onClick={() => setSelectedDoc(req.verification_doc_url || req.proof_url || '#')}
+                   onClick={() => setSelectedDoc(req.proof_url || req.verification_doc_url || '#')}
                    className="col-span-2 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-[9px] font-black uppercase tracking-widest hover:text-nova-cyan hover:border-nova-cyan/20 transition-all mb-2"
                  >
                     <div className="flex items-center gap-2">
@@ -223,6 +229,7 @@ export default function PremiumVerification({ initialRequests = [] }: { initialR
                          <a
                            href={selectedDoc}
                            target="_blank"
+                           rel="noopener noreferrer"
                            className="px-8 py-3 rounded-2xl bg-nova-cyan text-black text-[9px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2"
                          >
                             <ExternalLink size={12} /> Open Original Document
