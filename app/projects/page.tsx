@@ -1,81 +1,111 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { LayoutGrid, Loader2, ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Briefcase, Loader2, Search } from 'lucide-react';
+import Link from 'next/link';
+import { getCreatorProjects } from '@/lib/actions/projects';
+import ProjectTopBar from '@/components/projects/ProjectTopBar';
+import ProjectCard from '@/components/projects/ProjectCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ProjectsPage() {
+const TABS = ['Active', 'Showcase', 'Archived'];
+
+export default function ProjectsHub() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('Active');
 
   useEffect(() => {
-    async function fetchProjects() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          creator:profiles(full_name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (data) setProjects(data);
+    const fetchProjects = async () => {
+      const { data, error } = await getCreatorProjects();
+      if (!error && data) {
+        setProjects(data);
+      }
       setLoading(false);
-    }
+    };
     fetchProjects();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="text-nova-cyan animate-spin" size={32} />
-      </div>
-    );
-  }
+  const filteredProjects = projects.filter(p => {
+    if (activeTab === 'Archived') return p.status === 'Archived';
+    if (activeTab === 'Showcase') return p.project_type === 'Showcase Project' && p.status !== 'Archived';
+    if (activeTab === 'Active') return p.status === 'Active' && p.project_type === 'Live Project';
+    return true;
+  });
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-10 pt-24">
-      <header className="mb-12">
-        <h1 className="text-4xl font-black tracking-tighter uppercase mb-2">Projects</h1>
-        <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Active innovation initiatives</p>
-      </header>
+    <div className="min-h-screen bg-[#050505] text-white pb-32">
+      <ProjectTopBar title="Projects Hub" showBack={false} />
 
-      {projects.length === 0 ? (
-        <div className="text-center py-20 glass rounded-3xl border-white/5">
-          <p className="text-white/20 uppercase tracking-widest text-sm">No active projects found</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass rounded-3xl overflow-hidden border-white/5 group hover:border-nova-cyan/30 transition-all"
+      <main className="pt-24 px-4 space-y-8">
+        {/* Welcome & Stats */}
+        <section>
+          <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Command Center</h2>
+          <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage your innovation ecosystem</p>
+        </section>
+
+        {/* Quick Actions */}
+        <section>
+          <Link
+            href="/projects/create"
+            className="w-full py-5 rounded-[2rem] bg-white text-black flex items-center justify-center gap-3 hover:bg-nova-cyan transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+          >
+            <Plus size={20} strokeWidth={3} />
+            <span className="text-xs font-black uppercase tracking-widest">Create Project</span>
+          </Link>
+        </section>
+
+        {/* Tabs */}
+        <section className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all shrink-0 ${
+                activeTab === tab
+                ? 'bg-nova-cyan text-black'
+                : 'bg-white/5 text-white/40 border border-white/5'
+              }`}
             >
-              <div className="aspect-video relative overflow-hidden">
-                <img
-                  src={project.thumbnail_url || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000"}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  alt={project.title}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              </div>
-              <div className="p-6">
-                <div className="text-[10px] text-nova-cyan font-bold uppercase tracking-widest mb-2">
-                  {project.creator?.full_name}
-                </div>
-                <h3 className="text-xl font-bold mb-3">{project.title}</h3>
-                <p className="text-sm text-white/40 line-clamp-2 mb-6">{project.description}</p>
-                <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                  Access Repository <ExternalLink size={14} />
-                </button>
-              </div>
-            </motion.div>
+              {tab}
+            </button>
           ))}
-        </div>
-      )}
+        </section>
+
+        {/* Project List */}
+        <section className="space-y-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="text-nova-cyan animate-spin" size={32} />
+            </div>
+          ) : filteredProjects.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6">
+              <AnimatePresence mode="popLayout">
+                {filteredProjects.map((project, i) => (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <ProjectCard project={project} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="py-20 rounded-[3rem] border border-dashed border-white/10 flex flex-col items-center justify-center text-center space-y-6">
+              <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center text-white/20">
+                <Briefcase size={32} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-widest mb-2">No {activeTab} Nodes</h3>
+                <p className="text-[10px] text-white/20 uppercase tracking-[0.3em]">Initialize a new innovation node to begin production</p>
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
