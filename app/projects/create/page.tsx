@@ -15,6 +15,8 @@ import {
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createProject } from '@/lib/actions/projects';
 import { createClient } from '@/lib/supabase/client';
+import { uploadFile } from '@/lib/supabase/storage';
+import NovaErrorModal from '@/components/common/NovaErrorModal';
 
 export default function CreateProjectPage() {
   const [step, setStep] = useState(1);
@@ -35,31 +37,23 @@ export default function CreateProjectPage() {
     setStep(2);
   };
 
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '', title: '' });
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
-    const supabase = createClient();
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `project-covers/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('projects')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('projects')
-        .getPublicUrl(filePath);
-
-      setFormData({ ...formData, cover_image: publicUrl });
+      const url = await uploadFile(file, 'projects');
+      setFormData({ ...formData, cover_image: url });
     } catch (error: any) {
-      alert('Error uploading image: ' + error.message);
+      setErrorModal({
+        isOpen: true,
+        title: "Upload Failed",
+        message: error.message || "Failed to synchronize visual asset to the projects bucket."
+      });
     } finally {
       setUploading(false);
     }
@@ -67,23 +61,35 @@ export default function CreateProjectPage() {
 
   const handleSubmit = async () => {
     if (!formData.title || !formData.short_description || !formData.category) {
-      alert('Please fill in all required fields');
+      setErrorModal({
+        isOpen: true,
+        title: "Incomplete Signal",
+        message: "Please ensure all required node parameters are defined before synchronization."
+      });
       return;
     }
 
     setLoading(true);
-    const result = await createProject({
-      ...formData,
-      full_description: formData.short_description, // For now reuse
-      visibility: formData.visibility === 'Public' ? 'Public' : 'Private',
-      tags: []
-    });
+    try {
+      const result = await createProject({
+        ...formData,
+        full_description: formData.short_description, // For now reuse
+        visibility: formData.visibility === 'Public' ? 'Public' : 'Private',
+        tags: []
+      });
 
-    if (result.error) {
-      alert(result.error);
+      if (result.error) {
+        throw new Error(result.error);
+      } else {
+        router.push(`/projects/${result.data.id}`);
+      }
+    } catch (error: any) {
+      setErrorModal({
+        isOpen: true,
+        title: "Synchronization Failed",
+        message: error.message || "An unexpected error occurred during node initialization."
+      });
       setLoading(false);
-    } else {
-      router.push(`/projects/${result.data.id}`);
     }
   };
 
@@ -318,6 +324,13 @@ export default function CreateProjectPage() {
           </div>
         )}
       </main>
+
+      <NovaErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+      />
     </div>
   );
 }

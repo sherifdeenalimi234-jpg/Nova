@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
+import NovaErrorModal from '@/components/common/NovaErrorModal';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -32,6 +33,7 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '', title: '' });
   const [editForm, setEditForm] = useState({
     title: '',
     short_description: '',
@@ -61,18 +63,26 @@ export default function ProjectDetailsPage() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    if (!confirm('Are you sure you want to decommission this innovation node?')) return;
     const { error } = await deleteProject(id);
     if (!error) router.push('/projects');
-    else alert(error);
+    else setErrorModal({
+      isOpen: true,
+      title: "Decommissioning Failed",
+      message: error || "Unable to decommission node. System access restricted."
+    });
   };
 
   const handleArchive = async () => {
-    if (!confirm('Are you sure you want to archive this project?')) return;
+    if (!confirm('Are you sure you want to archive this node?')) return;
     const { error } = await archiveProject(id);
     if (!error) {
       setProject({ ...project, status: 'Archived' });
-    } else alert(error);
+    } else setErrorModal({
+      isOpen: true,
+      title: "Archival Failed",
+      message: error || "Unable to archive node. Storage interface error."
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -80,7 +90,11 @@ export default function ProjectDetailsPage() {
     if (!error) {
       setProject({ ...project, ...editForm });
       setIsEditing(false);
-    } else alert(error);
+    } else setErrorModal({
+      isOpen: true,
+      title: "Update Failed",
+      message: error || "Unable to synchronize node parameters."
+    });
   };
 
   if (loading) {
@@ -235,6 +249,13 @@ export default function ProjectDetailsPage() {
            </section>
         )}
       </main>
+
+      <NovaErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+      />
     </div>
   );
 }
