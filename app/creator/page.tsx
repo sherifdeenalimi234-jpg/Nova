@@ -104,9 +104,6 @@ export default function CreatorDashboard() {
            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage your innovation ecosystem</p>
         </div>
         <div className="flex gap-4">
-           <button className="px-6 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all">
-              Initiate Project
-           </button>
            <button className="px-6 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
               Publish Research
            </button>
@@ -216,7 +213,6 @@ export default function CreatorDashboard() {
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { name: 'Create Post', icon: FileText, href: '/creator/posts/new' },
-              { name: 'Add Project', icon: Briefcase, href: '/creator/projects/new' },
               { name: 'Start Survey', icon: Search, href: '/creator/surveys/new' },
               { name: 'Edit Portfolio', icon: User, href: '/creator/portfolio' },
             ].map((action) => (

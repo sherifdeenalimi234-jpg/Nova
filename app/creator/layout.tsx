@@ -39,7 +39,6 @@ export default async function CreatorLayout({
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
     { name: 'Posts', icon: FileText, href: '/creator/posts' },
-    { name: 'Projects', icon: Briefcase, href: '/creator/projects' },
     { name: 'Surveys', icon: Search, href: '/creator/surveys' },
     { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
     { name: 'Portfolio', icon: User, href: '/creator/portfolio' },

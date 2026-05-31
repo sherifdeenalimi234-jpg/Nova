@@ -31,7 +31,6 @@ const MobileNav: React.FC<MobileNavProps> = ({ profile }) => {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
     { name: 'Posts', icon: FileText, href: '/creator/posts' },
-    { name: 'Projects', icon: Briefcase, href: '/creator/projects' },
     { name: 'Surveys', icon: Search, href: '/creator/surveys' },
     { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
     { name: 'Portfolio', icon: User, href: `/u/${profile?.custom_url || profile?.id}` },
@@ -41,7 +40,6 @@ const MobileNav: React.FC<MobileNavProps> = ({ profile }) => {
   const bottomItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
     { name: 'Posts', icon: FileText, href: '/creator/posts' },
-    { name: 'Projects', icon: Briefcase, href: '/creator/projects' },
     { name: 'Discover', icon: Search, href: '/feed' },
     { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
   ];

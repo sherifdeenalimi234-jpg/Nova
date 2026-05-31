@@ -32,7 +32,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isCreato
       { label: "Creator Studio", icon: LayoutGrid, href: "/creator" },
       { label: "Creator Dashboard", icon: BarChart3, href: "/creator" },
       { label: "Creator Profile", icon: User, href: "/creator/portfolio" },
-      { label: "Creator Projects", icon: LayoutGrid, href: "/creator/projects" },
       { label: "Creator Research", icon: ClipboardList, href: "/creator/posts" },
       { label: "Creator Surveys", icon: ClipboardList, href: "/creator/surveys" },
       { label: "Creator Analytics", icon: BarChart3, href: "/creator/analytics" },
