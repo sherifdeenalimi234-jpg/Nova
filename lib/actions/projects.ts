@@ -84,7 +84,7 @@ export async function updateProject(projectId: string, formData: any) {
     revalidatePath('/feed');
   }
 
-  return { data, error };
+  return { data, error: error ? error.message : null };
 }
 
 export async function deleteProject(projectId: string) {
@@ -103,7 +103,7 @@ export async function deleteProject(projectId: string) {
     revalidatePath('/feed');
   }
 
-  return { error };
+  return { error: error ? error.message : null };
 }
 
 export async function getProject(projectId: string) {

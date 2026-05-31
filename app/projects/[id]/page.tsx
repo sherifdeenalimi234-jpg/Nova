@@ -69,7 +69,7 @@ export default function ProjectDetailsPage() {
     else setErrorModal({
       isOpen: true,
       title: "Decommissioning Failed",
-      message: error.message || "Unable to decommission node. System access restricted."
+      message: error || "Unable to decommission node. System access restricted."
     });
   };
 
@@ -81,7 +81,7 @@ export default function ProjectDetailsPage() {
     } else setErrorModal({
       isOpen: true,
       title: "Archival Failed",
-      message: error.message || "Unable to archive node. Storage interface error."
+      message: error || "Unable to archive node. Storage interface error."
     });
   };
 
@@ -93,7 +93,7 @@ export default function ProjectDetailsPage() {
     } else setErrorModal({
       isOpen: true,
       title: "Update Failed",
-      message: error.message || "Unable to synchronize node parameters."
+      message: error || "Unable to synchronize node parameters."
     });
   };
 
