@@ -9,7 +9,8 @@ export async function createProject(formData: {
   full_description: string;
   category: string;
   visibility: 'Public' | 'Team Only' | 'Private';
-  tags: string[];
+  project_type: 'Live Project' | 'Showcase Project';
+  tags?: string[];
   cover_image?: string;
   banner_image?: string;
 }) {
@@ -32,7 +33,8 @@ export async function createProject(formData: {
       full_description: formData.full_description,
       category: formData.category,
       visibility: formData.visibility,
-      tags: formData.tags,
+      project_type: formData.project_type,
+      tags: formData.tags || [],
       cover_image: formData.cover_image,
       banner_image: formData.banner_image,
       status: 'Active'
@@ -57,7 +59,7 @@ export async function createProject(formData: {
     return { error: memberError.message };
   }
 
-  revalidatePath('/creator/projects');
+  revalidatePath('/projects');
   revalidatePath('/feed');
 
   return { data: project, error: null };
@@ -77,8 +79,8 @@ export async function updateProject(projectId: string, formData: any) {
     .single();
 
   if (!error) {
-    revalidatePath('/creator/projects');
-    revalidatePath(`/creator/projects/${projectId}`);
+    revalidatePath('/projects');
+    revalidatePath(`/projects/${projectId}`);
     revalidatePath('/feed');
   }
 
@@ -97,7 +99,7 @@ export async function deleteProject(projectId: string) {
     .eq('id', projectId);
 
   if (!error) {
-    revalidatePath('/creator/projects');
+    revalidatePath('/projects');
     revalidatePath('/feed');
   }
 
