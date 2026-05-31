@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+
+
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import ContentModerationContent from '@/components/admin/ContentModerationContent';
@@ -5,7 +8,7 @@ import ContentModerationContent from '@/components/admin/ContentModerationConten
 export default async function AdminContentPage() {
   const supabase = await createClient();
 
-  const { data: pendingPosts } = await supabase
+  const { data: pendingPosts } = await supabase!
     .from('posts')
     .select('*, author:profiles(full_name)')
     .eq('status', 'pending')

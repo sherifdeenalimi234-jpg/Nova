@@ -1,4 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
+
+
 
 import React, { useState, useEffect } from 'react';
 import { updateProfile } from '@/lib/actions/profile';
@@ -33,11 +36,11 @@ export default function CreatorSettingsPage() {
 
   useEffect(() => {
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase!.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      const { data: creator } = await supabase.from('creator_profiles').select('*').eq('id', user.id).single();
+      const { data: profile } = await supabase!.from('profiles').select('*').eq('id', user.id).single();
+      const { data: creator } = await supabase!.from('creator_profiles').select('*').eq('id', user.id).single();
 
       if (profile) {
         setFullName(profile.full_name || '');

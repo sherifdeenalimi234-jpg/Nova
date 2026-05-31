@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+
+
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { getProfileByUsername } from '@/lib/supabase/profiles';
@@ -29,7 +32,9 @@ const socialIcons: Record<string, any> = {
 
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
-  const { data: profile, error } = await getProfileByUsername(username);
+  const profileData = await getProfileByUsername(username);
+  const profile = profileData?.data;
+  const error = profileData?.error;
 
   if (error || !profile) {
     notFound();
