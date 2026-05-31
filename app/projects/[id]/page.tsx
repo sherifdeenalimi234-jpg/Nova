@@ -18,7 +18,8 @@ import {
   Edit3,
   Briefcase,
   X,
-  Check
+  Check,
+  Clock
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
