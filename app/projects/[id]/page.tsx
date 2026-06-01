@@ -30,58 +30,17 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isOwner, setIsOwner] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    title: '',
-    short_description: '',
-    category: ''
-  });
 
   useEffect(() => {
     async function fetchProject() {
       const { data, error } = await getProject(id);
       if (data) {
         setProject(data);
-        setEditForm({
-          title: data.title,
-          short_description: data.short_description,
-          category: data.category
-        });
-
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && data.creator_id === user.id) {
-          setIsOwner(true);
-        }
       }
       setLoading(false);
     }
     fetchProject();
   }, [id]);
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    const { error } = await deleteProject(id);
-    if (!error) router.push('/projects');
-    else alert(error);
-  };
-
-  const handleArchive = async () => {
-    if (!confirm('Are you sure you want to archive this project?')) return;
-    const { error } = await archiveProject(id);
-    if (!error) {
-      setProject({ ...project, status: 'Archived' });
-    } else alert(error);
-  };
-
-  const handleSaveEdit = async () => {
-    const { error } = await updateProject(id, editForm);
-    if (!error) {
-      setProject({ ...project, ...editForm });
-      setIsEditing(false);
-    } else alert(error);
-  };
 
   if (loading) {
     return (
@@ -106,7 +65,7 @@ export default function ProjectDetailsPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white pb-20">
-      <ProjectTopBar title={isEditing ? "Edit Node" : "Innovation Node"} />
+      <ProjectTopBar title="Innovation Node" />
 
       {/* Hero Section */}
       <div className="relative h-72 w-full pt-16">
@@ -165,75 +124,23 @@ export default function ProjectDetailsPage() {
               <span className="px-2 py-1 rounded bg-nova-cyan/10 text-nova-cyan text-[7px] font-black uppercase tracking-widest">{project.category}</span>
            </div>
 
-           {isEditing ? (
-              <div className="space-y-4 animate-in fade-in zoom-in-95">
-                 <input
-                    type="text"
-                    value={editForm.title}
-                    onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan transition-all outline-none"
-                    placeholder="Project Name"
-                 />
-                 <input
-                    type="text"
-                    value={editForm.category}
-                    onChange={(e) => setEditForm({...editForm, category: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan transition-all outline-none"
-                    placeholder="Category"
-                 />
-                 <textarea
-                    value={editForm.short_description}
-                    onChange={(e) => setEditForm({...editForm, short_description: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan transition-all outline-none min-h-[150px] resize-none"
-                    placeholder="Description"
-                 />
-                 <div className="flex gap-4">
-                    <button onClick={() => setIsEditing(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                       <X size={14} /> Cancel
-                    </button>
-                    <button onClick={handleSaveEdit} className="flex-1 py-4 rounded-2xl bg-nova-cyan text-black text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                       <Check size={14} /> Save Changes
-                    </button>
-                 </div>
-              </div>
-           ) : (
-              <p className="text-[11px] leading-relaxed text-white/60 uppercase tracking-widest whitespace-pre-wrap">
-                 {project.short_description}
-              </p>
-           )}
+           <p className="text-[11px] leading-relaxed text-white/60 uppercase tracking-widest whitespace-pre-wrap">
+              {project.short_description}
+           </p>
         </section>
 
-        {/* Action Controls - Only for Owner */}
-        {isOwner && !isEditing && (
-           <section className="space-y-6 pt-10 border-t border-white/5">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Node Controls</h2>
-
-              <div className="grid grid-cols-1 gap-4">
-                 <button
-                    onClick={() => setIsEditing(true)}
-                    className="w-full py-5 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
-                 >
-                    <Edit3 size={18} /> Edit Node Parameters
-                 </button>
-
-                 <div className="grid grid-cols-2 gap-4">
-                    <button
-                       onClick={handleArchive}
-                       disabled={project.status === 'Archived'}
-                       className="py-5 rounded-[2rem] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-2 text-[8px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-20"
-                    >
-                       <Archive size={18} /> Archive Node
-                    </button>
-                    <button
-                       onClick={handleDelete}
-                       className="py-5 rounded-[2rem] bg-red-500/10 border border-red-500/20 flex flex-col items-center justify-center gap-2 text-[8px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/20 transition-all"
-                    >
-                       <Trash2 size={18} /> Decommission
-                    </button>
-                 </div>
-              </div>
-           </section>
-        )}
+        {/* Community Engagement (Placeholder) */}
+        <section className="pt-10 border-t border-white/5 space-y-6">
+           <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Community Protocol</h2>
+           <div className="flex gap-4">
+              <button className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest">
+                 Appreciate Node
+              </button>
+              <button className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest">
+                 View Roadmap
+              </button>
+           </div>
+        </section>
       </main>
     </div>
   );

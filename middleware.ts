@@ -84,6 +84,7 @@ export async function middleware(request: NextRequest) {
   const protectedRoutes = [
     '/feed',
     '/admin',
+    '/creator',
     '/projects',
     '/surveys',
     '/gallery',

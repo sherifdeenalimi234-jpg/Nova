@@ -83,7 +83,7 @@ export default function CreateProjectPage() {
       alert(result.error);
       setLoading(false);
     } else {
-      router.push(`/projects/${result.data.id}`);
+      router.push(`/creator/projects/${result.data.id}/workspace`);
     }
   };
 
