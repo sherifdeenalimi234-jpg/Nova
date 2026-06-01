@@ -63,7 +63,37 @@ export async function createProject(formData: {
   revalidatePath('/creator/projects');
   revalidatePath('/feed');
 
-  return { data: project, error: null };
+  // Verify records exist
+  const { data: verifyProject } = await supabase
+    .from('projects')
+    .select('id, slug')
+    .eq('id', project.id)
+    .single();
+
+  const { data: verifyMember } = await supabase
+    .from('project_members')
+    .select('id')
+    .eq('project_id', project.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!verifyProject || !verifyMember) {
+    return { error: "Verification failed: Project or membership record not found after creation." };
+  }
+
+  // If public, generate a feed post
+  if (formData.visibility === 'Public') {
+    await supabase.from('posts').insert({
+      author_id: user.id,
+      title: formData.title,
+      content: formData.short_description,
+      post_type: 'project',
+      status: 'approved',
+      media_url: formData.cover_image || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000"
+    });
+  }
+
+  return { data: verifyProject, error: null };
 }
 
 export async function updateProject(projectId: string, formData: any) {
