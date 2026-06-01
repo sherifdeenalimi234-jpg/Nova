@@ -42,7 +42,10 @@ export async function createProject(formData: {
     .select()
     .single();
 
-  if (projectError) return { error: projectError.message };
+  if (projectError) {
+    console.error('[createProject] Error inserting project:', projectError);
+    return { error: projectError.message };
+  }
 
   // Automatically add creator as Owner
   const { error: memberError } = await supabase

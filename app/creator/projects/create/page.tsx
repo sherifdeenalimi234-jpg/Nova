@@ -83,13 +83,14 @@ export default function CreateProjectPage() {
       alert(result.error);
       setLoading(false);
     } else {
-      router.push(`/creator/projects/${result.data.id}/workspace`);
+      // PHASE 1.2A/C: Redirect directly to the Project Website Home Page
+      router.push(`/projects/${result.data.id}`);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white pb-10">
-      <ProjectTopBar title="Initialize Node" />
+      <ProjectTopBar title="Create Node" />
 
       <main className="pt-24 px-6 max-w-lg mx-auto">
         {/* Step Progress */}
@@ -312,7 +313,7 @@ export default function CreateProjectPage() {
                 className="flex-[2] py-5 rounded-2xl bg-nova-cyan text-black text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all"
               >
                 {loading ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
-                Initialize Project
+                Create Project
               </button>
             </div>
           </div>

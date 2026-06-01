@@ -15,6 +15,7 @@ export default function PublicProjectsExplore() {
   useEffect(() => {
     const fetchPublicProjects = async () => {
       const supabase = createClient();
+      // Only fetch Public projects for the discovery feed
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -22,6 +23,7 @@ export default function PublicProjectsExplore() {
           project_members (count)
         `)
         .eq('visibility', 'Public')
+        .eq('status', 'Active')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
