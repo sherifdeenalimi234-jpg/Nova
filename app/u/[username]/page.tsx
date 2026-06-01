@@ -179,8 +179,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   profile.projects.map((project: any) => (
                     <div key={project.id} className="group relative rounded-[2.5rem] border border-white/10 bg-white/[0.02] overflow-hidden hover:border-nova-cyan/30 transition-all duration-700">
                       <div className="aspect-video w-full bg-white/5 relative overflow-hidden">
-                        {project.thumbnail_url ? (
-                          <img src={project.thumbnail_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                        {project.cover_image ? (
+                          <img src={project.cover_image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center italic text-white/10 text-xs">
                             No visual log
@@ -195,7 +195,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                           </span>
                         </div>
                         <h3 className="text-lg font-black mb-3 group-hover:text-nova-cyan transition-colors">{project.title}</h3>
-                        <p className="text-xs text-white/40 leading-relaxed line-clamp-2">{project.description}</p>
+                        <p className="text-xs text-white/40 leading-relaxed line-clamp-2">{project.short_description}</p>
                       </div>
                     </div>
                   ))
