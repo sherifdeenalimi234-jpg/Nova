@@ -109,6 +109,9 @@ export async function deleteProject(projectId: string) {
 export async function getProject(projectId: string) {
   const supabase = await createClient();
 
+  // Explicitly get user to ensure session is active in this server context
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from('projects')
     .select(`
@@ -124,6 +127,10 @@ export async function getProject(projectId: string) {
     `)
     .eq('id', projectId)
     .single();
+
+  if (error) {
+    console.error(`[getProject] Error fetching project ${projectId}:`, error.message);
+  }
 
   return { data, error };
 }
