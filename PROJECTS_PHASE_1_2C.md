@@ -39,3 +39,30 @@ The Project Website Home Page (`/projects/[id]`) is the public-facing "mini webs
 
 ## 5. Redirect Flow
 `Create Project Form` -> `lib/actions/projects.ts` (Create Project + Membership) -> `Redirect to /projects/[id]`
+
+## 6. Deliverables
+
+### Frontend Changes
+- **Project Website Home Page (`app/projects/[id]/page.tsx`):**
+    - Mobile-first design.
+    - Dynamic Hero section with visibility badges.
+    - Auto-calculating Statistics grid.
+    - Featured and Highlights placeholder sections.
+    - Integrated multi-section Footer.
+
+### Backend Changes
+- **`lib/actions/projects.ts`:**
+    - Updated `getProject` to include `project_members` for auto-calculating stats.
+    - Ensured redirection data (ID and Slug) is correctly returned.
+
+### Footer Architecture
+- Mandatory footer implemented in the landing page layout.
+- Support for Social Links: Website, Instagram, LinkedIn, Facebook, X, YouTube, GitHub.
+- Configured as hidden/placeholder until Project Profile settings are implemented.
+
+### Verification Results
+- [x] Redirects to `/projects/[id]` after creation.
+- [x] Hero displays correct project metadata.
+- [x] Stats correctly count project members.
+- [x] Footer contains all required sections.
+- [x] Layout is mobile-optimized.

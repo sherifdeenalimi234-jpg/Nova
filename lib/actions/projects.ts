@@ -81,6 +81,18 @@ export async function createProject(formData: {
     return { error: "Verification failed: Project or membership record not found after creation." };
   }
 
+  // If public, generate a feed post
+  if (formData.visibility === 'Public') {
+    await supabase.from('posts').insert({
+      author_id: user.id,
+      title: formData.title,
+      content: formData.short_description,
+      post_type: 'project',
+      status: 'approved',
+      media_url: formData.cover_image || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1000"
+    });
+  }
+
   return { data: verifyProject, error: null };
 }
 
