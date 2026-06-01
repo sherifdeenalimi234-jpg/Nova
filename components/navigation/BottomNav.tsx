@@ -29,6 +29,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isCreato
   const moreItems = [
     // Creator Specific Items
     ...(isCreator ? [
+      { label: "Project Hub", icon: LayoutGrid, href: "/creator/projects" },
       { label: "Creator Studio", icon: LayoutGrid, href: "/creator" },
       { label: "Creator Dashboard", icon: BarChart3, href: "/creator" },
       { label: "Creator Profile", icon: User, href: "/creator/portfolio" },

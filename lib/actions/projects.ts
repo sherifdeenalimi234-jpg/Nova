@@ -60,6 +60,7 @@ export async function createProject(formData: {
   }
 
   revalidatePath('/projects');
+  revalidatePath('/creator/projects');
   revalidatePath('/feed');
 
   return { data: project, error: null };
@@ -80,7 +81,9 @@ export async function updateProject(projectId: string, formData: any) {
 
   if (!error) {
     revalidatePath('/projects');
+    revalidatePath('/creator/projects');
     revalidatePath(`/projects/${projectId}`);
+    revalidatePath(`/creator/projects/${projectId}/workspace`);
     revalidatePath('/feed');
   }
 
@@ -100,6 +103,7 @@ export async function deleteProject(projectId: string) {
 
   if (!error) {
     revalidatePath('/projects');
+    revalidatePath('/creator/projects');
     revalidatePath('/feed');
   }
 
