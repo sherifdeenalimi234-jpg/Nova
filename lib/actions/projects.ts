@@ -63,7 +63,25 @@ export async function createProject(formData: {
   revalidatePath('/creator/projects');
   revalidatePath('/feed');
 
-  return { data: project, error: null };
+  // Verify records exist
+  const { data: verifyProject } = await supabase
+    .from('projects')
+    .select('id, slug')
+    .eq('id', project.id)
+    .single();
+
+  const { data: verifyMember } = await supabase
+    .from('project_members')
+    .select('id')
+    .eq('project_id', project.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!verifyProject || !verifyMember) {
+    return { error: "Verification failed: Project or membership record not found after creation." };
+  }
+
+  return { data: verifyProject, error: null };
 }
 
 export async function updateProject(projectId: string, formData: any) {

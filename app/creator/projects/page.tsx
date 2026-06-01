@@ -99,8 +99,8 @@ export default function ProjectsHub() {
                 <Briefcase size={32} />
               </div>
               <div>
-                <h3 className="text-lg font-black uppercase tracking-widest mb-2">No {activeTab} Nodes</h3>
-                <p className="text-[10px] text-white/20 uppercase tracking-[0.3em]">Initialize a new innovation node to begin production</p>
+                <h3 className="text-lg font-black uppercase tracking-widest mb-2">No {activeTab} Projects</h3>
+                <p className="text-[10px] text-white/20 uppercase tracking-[0.3em]">Create a new project to begin production</p>
               </div>
             </div>
           )}
