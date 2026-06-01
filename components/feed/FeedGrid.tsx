@@ -137,6 +137,30 @@ const FeedGrid = () => {
                   <span className="text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/70">Analytics</span>
                 </button>
               )}
+
+              {post.post_type === 'project' && (
+                <button
+                  onClick={() => {
+                    const projectIdMatch = post.content?.match(/\[Project ID: (.*?)\]/);
+                    const projectId = projectIdMatch ? projectIdMatch[1] : null;
+                    if (projectId) {
+                      router.push(`/projects/${projectId}`);
+                    } else {
+                      // Fallback to title lookup if ID not found in content (for legacy posts)
+                      const fetchAndNavigate = async () => {
+                        const supabase = createClient();
+                        const { data } = await supabase.from('projects').select('id').eq('title', post.title).limit(1).single();
+                        if (data) router.push(`/projects/${data.id}`);
+                      };
+                      fetchAndNavigate();
+                    }
+                  }}
+                  className="flex items-center gap-2 group transition-all"
+                >
+                  <Briefcase size={20} className="text-white/60 group-hover:text-nova-green transition-all" />
+                  <span className="text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/70">View Project</span>
+                </button>
+              )}
             </div>
 
             <p className="text-[13px] text-white/70 leading-relaxed font-light">
