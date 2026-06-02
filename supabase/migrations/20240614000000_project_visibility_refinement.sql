@@ -48,18 +48,23 @@ EXCEPTION
 END $$;
 
 -- Storage specific policies (outside DO block for clarity if needed, but DO block is fine)
+-- Storage specific policies
+DROP POLICY IF EXISTS "Project covers are publicly readable" ON storage.objects;
 CREATE POLICY "Project covers are publicly readable"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'projects');
 
+DROP POLICY IF EXISTS "Users can upload project covers" ON storage.objects;
 CREATE POLICY "Users can upload project covers"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'projects' AND auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Users can update their own project covers" ON storage.objects;
 CREATE POLICY "Users can update their own project covers"
 ON storage.objects FOR UPDATE
 USING (bucket_id = 'projects' AND auth.uid() = owner);
 
+DROP POLICY IF EXISTS "Users can delete their own project covers" ON storage.objects;
 CREATE POLICY "Users can delete their own project covers"
 ON storage.objects FOR DELETE
 USING (bucket_id = 'projects' AND auth.uid() = owner);
