@@ -17,7 +17,8 @@ import {
   Linkedin,
   Facebook,
   Youtube,
-  Github
+  Github,
+  Link as LinkIcon
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
@@ -75,10 +76,10 @@ export default function ProjectWebsiteHomePage() {
   }
 
   const stats = [
-    { label: 'Members', value: project.project_members?.length || 1, icon: Users },
-    { label: 'Files', value: 0, icon: FileText },
-    { label: 'Activities', value: 0, icon: Activity },
-    { label: 'Updates', value: 0, icon: RefreshCw },
+    { label: 'Members', value: project.project_members?.length ?? (typeof project.project_members === 'object' ? project.project_members.count : 1), icon: Users },
+    { label: 'Files', value: project.stats?.files || 0, icon: FileText },
+    { label: 'Activities', value: project.stats?.activities || 0, icon: Activity },
+    { label: 'Updates', value: project.stats?.updates || 0, icon: RefreshCw },
   ];
 
   return (
@@ -86,12 +87,25 @@ export default function ProjectWebsiteHomePage() {
       <ProjectTopBar title="Innovation Node" />
 
       {/* Hero Section */}
-      <section className="relative h-[60vh] w-full pt-16 flex flex-col justify-end overflow-hidden">
+      <section className="relative h-[65vh] w-full pt-16 flex flex-col justify-end overflow-hidden">
         {project.cover_image ? (
           <img src={project.cover_image} className="absolute inset-0 w-full h-full object-cover" alt={project.title} />
         ) : (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-nova-cyan/20 to-nova-purple/20 flex items-center justify-center">
-            <Briefcase size={80} className="text-white/5" />
+          <div className="absolute inset-0 w-full h-full bg-[#080808] flex items-center justify-center overflow-hidden">
+             <div className="absolute inset-0 bg-gradient-to-br from-nova-cyan/10 via-transparent to-nova-purple/10 opacity-50" />
+             <div className="absolute w-[500px] h-[500px] bg-nova-cyan/5 blur-[120px] rounded-full -top-48 -left-48" />
+             <div className="absolute w-[500px] h-[500px] bg-nova-purple/5 blur-[120px] rounded-full -bottom-48 -right-48" />
+             <div className="relative z-10 flex flex-col items-center gap-6">
+                <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-xl">
+                  <Briefcase size={40} className="text-white/20" />
+                </div>
+                <div className="text-center">
+                   <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mb-2">NOVA INNOVATION NODE</p>
+                   <div className="flex gap-1 justify-center">
+                      {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/5" />)}
+                   </div>
+                </div>
+             </div>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
@@ -134,13 +148,15 @@ export default function ProjectWebsiteHomePage() {
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Latest Updates</h2>
-            <button className="text-[8px] font-black uppercase tracking-widest text-nova-cyan flex items-center gap-2">
+            <button className="text-[8px] font-black uppercase tracking-widest text-white/20 flex items-center gap-2">
               View All <ArrowRight size={10} />
             </button>
           </div>
-          <div className="aspect-video rounded-[3rem] border border-dashed border-white/10 flex flex-col items-center justify-center text-center p-8 bg-white/[0.02]">
-            <RefreshCw size={24} className="text-white/10 mb-4" />
+          <div className="aspect-video rounded-[3rem] border border-white/5 flex flex-col items-center justify-center text-center p-8 bg-white/[0.02] relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-nova-cyan/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <RefreshCw size={24} className="text-white/10 mb-4 animate-spin-slow" />
             <p className="text-[10px] text-white/20 uppercase tracking-[0.3em]">No transmission history found</p>
+            <p className="mt-2 text-[8px] text-white/10 uppercase tracking-widest">Awaiting node synchronization...</p>
           </div>
         </section>
 
@@ -148,11 +164,21 @@ export default function ProjectWebsiteHomePage() {
         <section className="space-y-6">
           <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Node Highlights</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="min-w-[280px] aspect-[4/5] rounded-[3rem] bg-white/5 border border-white/5 p-8 flex flex-col justify-end">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 mb-4" />
-                <div className="h-4 w-2/3 bg-white/10 rounded-full mb-2" />
-                <div className="h-3 w-full bg-white/5 rounded-full" />
+            {[
+              { label: 'Research', color: 'bg-nova-purple' },
+              { label: 'Milestones', color: 'bg-nova-cyan' },
+              { label: 'Innovations', color: 'bg-nova-green' }
+            ].map((item, i) => (
+              <div key={i} className="min-w-[280px] aspect-[4/5] rounded-[3rem] bg-white/5 border border-white/5 p-8 flex flex-col justify-end group hover:border-white/10 transition-all">
+                <div className={`w-12 h-12 rounded-2xl ${item.color}/10 border ${item.color.replace('bg-', 'border-')}/20 mb-6 flex items-center justify-center`}>
+                   <div className={`w-2 h-2 rounded-full ${item.color} animate-pulse`} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2">{item.label}</h3>
+                <div className="h-1 w-12 bg-white/10 rounded-full mb-6" />
+                <div className="space-y-2">
+                   <div className="h-2 w-full bg-white/5 rounded-full" />
+                   <div className="h-2 w-2/3 bg-white/5 rounded-full" />
+                </div>
               </div>
             ))}
           </div>
@@ -201,8 +227,8 @@ export default function ProjectWebsiteHomePage() {
           </div>
 
           <div className="pt-8 border-t border-white/5">
-            <div className="flex gap-4">
-              {[Instagram, XIcon, Linkedin, Facebook, Youtube, Github].map((Icon, i) => (
+            <div className="flex flex-wrap gap-4">
+              {[LinkIcon, Instagram, XIcon, Linkedin, Facebook, Youtube, Github].map((Icon, i) => (
                 <button key={i} className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/20 hover:text-nova-cyan hover:border-nova-cyan/30 transition-all">
                   <Icon size={18} />
                 </button>

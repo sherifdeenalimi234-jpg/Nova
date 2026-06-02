@@ -163,6 +163,26 @@ export async function getProject(projectIdOrSlug: string) {
 
   const { data, error } = await query.single();
 
+  if (!error && data) {
+    // Fetch counts for statistics
+    const { count: activityCount } = await supabase
+      .from('activity_feed')
+      .select('*', { count: 'exact', head: true })
+      .eq('entity_id', data.id);
+
+    const { count: updateCount } = await supabase
+      .from('activity_feed')
+      .select('*', { count: 'exact', head: true })
+      .eq('entity_id', data.id)
+      .ilike('action', '%UPDATE%');
+
+    data.stats = {
+      activities: activityCount || 0,
+      updates: updateCount || 0,
+      files: 0
+    };
+  }
+
   if (error) {
     console.error(`[getProject] Error fetching project ${projectIdOrSlug}:`, error.message);
   }
