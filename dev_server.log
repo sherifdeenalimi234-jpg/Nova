@@ -31,3 +31,16 @@
  GET /projects/explore 200 in 1388ms
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled in 1045ms (743 modules)
+[Middleware] Path: /projects/non-existent-id, User: Guest
+ ○ Compiling /projects/[id] ...
+ ✓ Compiled /projects/[id] in 4.1s (1760 modules)
+ GET /projects/non-existent-id 200 in 6936ms
+[Middleware] Path: /projects/non-existent-id, User: Guest
+[getProject] Error fetching project non-existent-id: TypeError: fetch failed
+ POST /projects/non-existent-id 200 in 7278ms
+[Middleware] Path: /projects/non-existent-id/workspace, User: Guest
+[Middleware] Guest accessing protected route /projects/non-existent-id/workspace, redirecting to /
+[Middleware] Path: /, User: Guest
+ GET / 200 in 321ms
+ ✓ Compiled in 509ms (756 modules)

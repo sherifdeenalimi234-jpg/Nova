@@ -62,6 +62,16 @@ export async function createProject(formData: {
     return { error: memberError.message };
   }
 
+  // Activity Feed Integration
+  if (formData.visibility === 'Public') {
+    await supabase.from('activity_feed').insert({
+      user_id: user.id,
+      action: 'LAUNCHED NEW PROJECT',
+      entity_id: project.id,
+      entity_type: 'project'
+    });
+  }
+
   revalidatePath('/projects');
   revalidatePath('/projects/explore');
   revalidatePath('/feed');
@@ -83,6 +93,16 @@ export async function updateProject(projectId: string, formData: any) {
     .single();
 
   if (!error) {
+    // Activity Feed Integration for Visibility Changes
+    if (formData.visibility === 'Public') {
+      await supabase.from('activity_feed').insert({
+        user_id: user.id,
+        action: 'UPDATED PROJECT SPECS',
+        entity_id: projectId,
+        entity_type: 'project'
+      });
+    }
+
     revalidatePath('/projects');
     revalidatePath('/projects/explore');
     revalidatePath(`/projects/${projectId}`);
