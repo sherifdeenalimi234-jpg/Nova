@@ -62,6 +62,27 @@ export async function createProject(formData: {
     return { error: memberError.message };
   }
 
+  // PHASE 1.2B: Automatically generate a public post if the project is Public
+  if (formData.visibility === 'Public') {
+    const { error: postError } = await supabase
+      .from('posts')
+      .insert({
+        author_id: user.id,
+        title: project.title,
+        // We append the project ID in a hidden-ish way or use it in the content
+        // Since we lack a dedicated project_id column in posts, we store it in metadata if possible
+        // or just rely on unique slugs/titles for now, but we'll use the ID in the content for better lookup
+        content: `${project.short_description}\n\n[Project ID: ${project.id}]`,
+        post_type: 'project',
+        media_url: project.cover_image,
+        status: 'approved' // Automatically approved based on NOVA project distribution rules
+      });
+
+    if (postError) {
+      console.error('[createProject] Error generating project post:', postError);
+    }
+  }
+
   revalidatePath('/projects');
   revalidatePath('/creator/projects');
   revalidatePath('/feed');

@@ -150,7 +150,25 @@ const RingSystem = () => {
                         <span className="text-[10px] uppercase tracking-widest">Share Signal</span>
                       </button>
                     </div>
-                    <button className="flex items-center gap-2 text-nova-cyan group">
+                    <button
+                      onClick={() => {
+                        if (selectedSignal.label === 'PROJECT') {
+                          const projectIdMatch = selectedSignal.content?.match(/\[Project ID: (.*?)\]/);
+                          const projectId = projectIdMatch ? projectIdMatch[1] : null;
+                          if (projectId) {
+                            router.push(`/projects/${projectId}`);
+                          } else {
+                            const fetchAndNavigate = async () => {
+                              const supabase = createClient();
+                              const { data } = await supabase.from('projects').select('id').eq('title', selectedSignal.title).limit(1).single();
+                              if (data) router.push(`/projects/${data.id}`);
+                            };
+                            fetchAndNavigate();
+                          }
+                        }
+                      }}
+                      className="flex items-center gap-2 text-nova-cyan group"
+                    >
                       <span className="text-[10px] font-bold uppercase tracking-widest">Access Node</span>
                       <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                     </button>
