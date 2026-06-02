@@ -105,7 +105,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             </div>
 
             <p className="max-w-xl text-white/60 text-sm leading-relaxed mb-8">
-              {profile.bio || "System biography not initialized."}
+              {profile.bio || "System biography not yet updated."}
             </p>
 
             <div className="flex flex-wrap justify-center md:justify-start gap-4">

@@ -67,18 +67,18 @@ export default function ProjectWorkspacePage() {
         if (!user || (data.creator_id !== user.id)) {
            // In a real app we'd check project_members too,
            // but for now we follow the owner-gated hub model
-           // router.push('/creator/projects');
+           // router.push('/projects');
         }
       }
       setLoading(false);
     }
     fetchProject();
-  }, [id]);
+  }, [id, router]);
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to decommission this node?')) return;
     const { error } = await deleteProject(id);
-    if (!error) router.push('/creator/projects');
+    if (!error) router.push('/projects');
     else alert(error);
   };
 
@@ -112,7 +112,7 @@ export default function ProjectWorkspacePage() {
         <Briefcase size={64} className="text-white/10 mb-6" />
         <h2 className="text-xl font-black uppercase tracking-widest mb-2">Node Not Found</h2>
         <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] mb-8">This innovation node is offline or restricted.</p>
-        <button onClick={() => router.push('/creator/projects')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest">
+        <button onClick={() => router.push('/projects')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest">
           Return to Projects
         </button>
       </div>

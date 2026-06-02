@@ -49,7 +49,7 @@ export default function CreatePostPage() {
       <header className="flex items-center justify-between">
          <div>
             <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Publish Intel</h1>
-            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Initialize a new ecosystem transmission</p>
+            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Create a new ecosystem transmission</p>
          </div>
          <div className="flex gap-4">
             <button

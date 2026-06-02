@@ -85,7 +85,6 @@ export async function middleware(request: NextRequest) {
     '/feed',
     '/admin',
     '/creator',
-    '/projects',
     '/surveys',
     '/gallery',
     '/analytics',
@@ -96,7 +95,14 @@ export async function middleware(request: NextRequest) {
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  if (isProtectedRoute && !user) {
+  // Specific Project Route Protection
+  const isProjectHub = pathname === '/projects';
+  const isProjectCreate = pathname.startsWith('/projects/create');
+  const isProjectWorkspace = pathname.includes('/workspace');
+
+  const requiresAuth = isProtectedRoute || isProjectHub || isProjectCreate || isProjectWorkspace;
+
+  if (requiresAuth && !user) {
     console.log(`[Middleware] Guest accessing protected route ${pathname}, redirecting to /`);
     const url = request.nextUrl.clone()
     url.pathname = '/'
