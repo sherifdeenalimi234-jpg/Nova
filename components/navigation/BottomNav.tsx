@@ -29,7 +29,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isCreato
   const moreItems = [
     // Creator Specific Items
     ...(isCreator ? [
-      { label: "Project Hub", icon: LayoutGrid, href: "/creator/projects" },
+      { label: "Project Hub", icon: LayoutGrid, href: "/projects" },
       { label: "Creator Studio", icon: LayoutGrid, href: "/creator" },
       { label: "Creator Dashboard", icon: BarChart3, href: "/creator" },
       { label: "Creator Profile", icon: User, href: "/creator/portfolio" },
@@ -37,7 +37,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isCreato
       { label: "Creator Surveys", icon: ClipboardList, href: "/creator/surveys" },
       { label: "Creator Analytics", icon: BarChart3, href: "/creator/analytics" },
     ] : []),
-    { label: "Projects", icon: LayoutGrid, href: "/projects" },
+    { label: "Explore Nodes", icon: LayoutGrid, href: "/projects/explore" },
     { label: "Surveys", icon: ClipboardList, href: "/surveys" },
     { label: "Gallery", icon: ImageIcon, href: "/gallery" },
     { label: "Analytics", icon: BarChart3, href: "/analytics" },

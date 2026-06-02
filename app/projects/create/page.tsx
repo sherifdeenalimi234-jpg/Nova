@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createProject } from '@/lib/actions/projects';
-import { createClient } from '@/lib/supabase/client';
+import { uploadFile } from '@/lib/supabase/storage';
 
 export default function CreateProjectPage() {
   const [step, setStep] = useState(1);
@@ -40,23 +40,8 @@ export default function CreateProjectPage() {
     if (!file) return;
 
     setUploading(true);
-    const supabase = createClient();
-
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `project-covers/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('projects')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('projects')
-        .getPublicUrl(filePath);
-
+      const publicUrl = await uploadFile(file, 'projects');
       setFormData({ ...formData, cover_image: publicUrl });
     } catch (error: any) {
       alert('Error uploading image: ' + error.message);

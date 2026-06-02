@@ -2,10 +2,32 @@
 > app@1.0.0 dev
 > next dev
 
- ⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
    ▲ Next.js 15.5.18
-   - Local:        http://localhost:3001
-   - Network:      http://192.168.0.2:3001
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 3s
+ ✓ Ready in 2.5s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1346ms (170 modules)
+[Middleware] Path: /projects, User: Guest
+[Middleware] Guest accessing protected route /projects, redirecting to /
+[Middleware] Path: /, User: Guest
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 11.1s (1582 modules)
+ GET / 200 in 12673ms
+[Middleware] Path: /, User: Guest
+ GET / 200 in 104ms
+[Middleware] Path: /projects, User: Guest
+[Middleware] Guest accessing protected route /projects, redirecting to /
+[Middleware] Path: /, User: Guest
+ GET / 200 in 92ms
+ ✓ Compiled in 731ms (899 modules)
+[Middleware] Path: /projects/explore, User: Guest
+ ○ Compiling /projects/explore ...
+ ✓ Compiled /projects/explore in 824ms (1599 modules)
+ GET /projects/explore 200 in 1388ms
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)

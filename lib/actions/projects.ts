@@ -63,7 +63,7 @@ export async function createProject(formData: {
   }
 
   revalidatePath('/projects');
-  revalidatePath('/creator/projects');
+  revalidatePath('/projects/explore');
   revalidatePath('/feed');
 
   return { data: project, error: null };
@@ -84,9 +84,9 @@ export async function updateProject(projectId: string, formData: any) {
 
   if (!error) {
     revalidatePath('/projects');
-    revalidatePath('/creator/projects');
+    revalidatePath('/projects/explore');
     revalidatePath(`/projects/${projectId}`);
-    revalidatePath(`/creator/projects/${projectId}/workspace`);
+    revalidatePath(`/projects/${projectId}/workspace`);
     revalidatePath('/feed');
   }
 
@@ -106,20 +106,22 @@ export async function deleteProject(projectId: string) {
 
   if (!error) {
     revalidatePath('/projects');
-    revalidatePath('/creator/projects');
+    revalidatePath('/projects/explore');
     revalidatePath('/feed');
   }
 
   return { error };
 }
 
-export async function getProject(projectId: string) {
+export async function getProject(projectIdOrSlug: string) {
   const supabase = await createClient();
 
   // Explicitly get user to ensure session is active in this server context
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectIdOrSlug);
+
+  const query = supabase
     .from('projects')
     .select(`
       *,
@@ -131,12 +133,18 @@ export async function getProject(projectId: string) {
           email
         )
       )
-    `)
-    .eq('id', projectId)
-    .single();
+    `);
+
+  if (isUuid) {
+    query.eq('id', projectIdOrSlug);
+  } else {
+    query.eq('slug', projectIdOrSlug);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
-    console.error(`[getProject] Error fetching project ${projectId}:`, error.message);
+    console.error(`[getProject] Error fetching project ${projectIdOrSlug}:`, error.message);
   }
 
   return { data, error };
@@ -148,16 +156,25 @@ export async function getCreatorProjects() {
 
   if (!user) return { data: [], error: "Authentication required." };
 
+  // Fetch projects where user is either the creator OR a member
+  // Using a join to ensure we get projects the user is involved in
   const { data, error } = await supabase
     .from('projects')
     .select(`
       *,
-      project_members (count)
+      project_members!inner (user_id),
+      all_members:project_members (count)
     `)
-    .eq('creator_id', user.id)
+    .eq('project_members.user_id', user.id)
     .order('created_at', { ascending: false });
 
-  return { data, error };
+  // Map the data to maintain the expected structure (project_members count)
+  const mappedData = data?.map(project => ({
+    ...project,
+    project_members: project.all_members
+  })) || [];
+
+  return { data: mappedData, error };
 }
 
 export async function archiveProject(projectId: string) {
