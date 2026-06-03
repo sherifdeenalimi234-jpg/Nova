@@ -19,7 +19,8 @@ import {
   Youtube,
   Github,
   Link as LinkIcon,
-  LayoutGrid
+  LayoutGrid,
+  ShieldAlert
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
@@ -47,15 +48,27 @@ export default function ProjectWebsiteHomePage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [audit, setAudit] = useState<any>(null);
 
   useEffect(() => {
     async function fetchProject() {
-      const { data, error } = await getProject(id);
+      const { data, error, debug } = await getProject(id);
+
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      setAudit({
+        routeParam: id,
+        authUserId: user?.id || 'GUEST',
+        queryType: debug?.isUuid ? 'ID_QUERY' : 'SLUG_QUERY',
+        projectResult: debug?.results?.project || 'ERROR',
+        error: error?.message || 'NONE',
+        rlsSuspected: (!data && debug?.projectStatus === 200),
+        trace: debug
+      });
+
       if (data) {
         setProject(data);
-
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
         if (user && data.creator_id === user.id) {
           setIsOwner(true);
         }
@@ -76,9 +89,47 @@ export default function ProjectWebsiteHomePage() {
   if (!project) {
     return (
       <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
-        <Briefcase size={64} className="text-white/10 mb-6" />
+        <ShieldAlert size={64} className="text-red-500/20 mb-6" />
         <h2 className="text-xl font-black uppercase tracking-widest mb-2">Node Offline</h2>
-        <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] mb-8">The innovation node you are looking for does not exist or has been decommissioned.</p>
+        <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] mb-8">The requested innovation node is unreachable or restricted by protocol.</p>
+
+        {/* LIVE DEBUGGING AUDIT PANEL */}
+        <div className="mb-10 p-6 rounded-[2rem] bg-white/5 border border-white/10 text-left w-full max-w-sm font-mono">
+           <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-4">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white">Live Audit Log</span>
+           </div>
+
+           <div className="space-y-4">
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">1. Route Parameter</p>
+                <p className="text-[10px] text-nova-cyan truncate">{audit?.routeParam}</p>
+              </div>
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">2. Project ID Detected</p>
+                <p className="text-[10px] text-white/80">{audit?.trace?.input}</p>
+              </div>
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">3. Auth Context (User ID)</p>
+                <p className="text-[10px] text-white/80">{audit?.authUserId}</p>
+              </div>
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">4. Query Status</p>
+                <p className="text-[10px] text-white/80">{audit?.queryType} {'->'} {audit?.projectResult}</p>
+              </div>
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">5. Postgres / RLS Result</p>
+                <p className={`text-[10px] ${audit?.rlsSuspected ? 'text-orange-400 font-bold' : 'text-white/80'}`}>
+                  {audit?.rlsSuspected ? 'BLOCKED BY RLS' : 'NOT FOUND / ERROR'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[7px] text-white/30 uppercase">6. Error Message</p>
+                <p className="text-[9px] text-red-400 leading-tight">{audit?.error}</p>
+              </div>
+           </div>
+        </div>
+
         <button onClick={() => router.push('/projects')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest">
           Return to Hub
         </button>
@@ -171,7 +222,7 @@ export default function ProjectWebsiteHomePage() {
 
         {/* Team Section */}
         <section>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-6">Active Reseachers</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-6">Active Researchers</h2>
           <div className="flex -space-x-3">
              {(project.project_members || []).slice(0, 5).map((member: any, i: number) => (
                <div key={i} className="w-12 h-12 rounded-full border-2 border-black bg-white/10 overflow-hidden">
