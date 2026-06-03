@@ -105,8 +105,8 @@ export async function updateProject(projectId: string, formData: any) {
 
     revalidatePath('/projects');
     revalidatePath('/projects/explore');
-    revalidatePath(`/projects/${projectId}`);
-    revalidatePath(`/projects/${projectId}/workspace`);
+    revalidatePath(`/project-space/${projectId}`);
+    revalidatePath(`/project-space/${projectId}/workspace`);
     revalidatePath('/feed');
   }
 
@@ -133,61 +133,95 @@ export async function deleteProject(projectId: string) {
   return { error };
 }
 
+/**
+ * getProject with robust trace logging and recursion-safe querying
+ */
 export async function getProject(projectIdOrSlug: string) {
-  const supabase = await createClient();
+  const trace: any = {
+    step: 'START',
+    input: projectIdOrSlug,
+    timestamp: new Date().toISOString(),
+    authUserId: null,
+    isUuid: false,
+    results: {
+      project: 'NOT_ATTEMPTED',
+      members: 'NOT_ATTEMPTED',
+      stats: 'NOT_ATTEMPTED'
+    }
+  };
 
-  // Explicitly get user to ensure session is active in this server context
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+    trace.authUserId = authData?.user?.id || 'GUEST';
+    trace.step = 'AUTH_OK';
 
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectIdOrSlug);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectIdOrSlug);
+    trace.isUuid = isUuid;
 
-  let query = supabase
-    .from('projects')
-    .select(`
-      *,
-      project_members (
+    // STEP 1: Fetch Project (Flat query to avoid join-induced RLS recursion)
+    let query = supabase.from('projects').select('*');
+    if (isUuid) {
+      query = query.eq('id', projectIdOrSlug);
+    } else {
+      query = query.eq('slug', projectIdOrSlug);
+    }
+
+    const { data: project, error: projectError, status } = await query.maybeSingle();
+    trace.results.project = project ? 'FOUND' : 'NULL';
+    trace.projectStatus = status;
+
+    if (projectError) {
+      trace.projectError = projectError;
+      return { data: null, error: projectError, debug: trace };
+    }
+
+    if (!project) {
+      trace.step = 'PROJECT_NOT_FOUND';
+      return { data: null, error: null, debug: trace };
+    }
+
+    // STEP 2: Fetch Members separately (Bypasses join recursion)
+    const { data: members, error: membersError } = await supabase
+      .from('project_members')
+      .select(`
         *,
         profiles (
           full_name,
-          avatar_url,
-          email
+          avatar_url
         )
-      )
-    `);
+      `)
+      .eq('project_id', project.id);
 
-  if (isUuid) {
-    query = query.eq('id', projectIdOrSlug);
-  } else {
-    query = query.eq('slug', projectIdOrSlug);
-  }
+    trace.results.members = members ? `FOUND_${members.length}` : 'NULL';
+    project.project_members = members || [];
 
-  const { data, error } = await query.single();
-
-  if (!error && data) {
-    // Fetch counts for statistics
+    // STEP 3: Fetch Stats
     const { count: activityCount } = await supabase
       .from('activity_feed')
       .select('*', { count: 'exact', head: true })
-      .eq('entity_id', data.id);
+      .eq('entity_id', project.id);
 
     const { count: updateCount } = await supabase
       .from('activity_feed')
       .select('*', { count: 'exact', head: true })
-      .eq('entity_id', data.id)
+      .eq('entity_id', project.id)
       .ilike('action', '%UPDATE%');
 
-    data.stats = {
+    project.stats = {
       activities: activityCount || 0,
       updates: updateCount || 0,
       files: 0
     };
-  }
+    trace.results.stats = 'OK';
+    trace.step = 'SUCCESS';
 
-  if (error) {
-    console.error(`[getProject] Error fetching project ${projectIdOrSlug}:`, error.message);
+    return { data: project, error: null, debug: trace };
+  } catch (fatal: any) {
+    trace.step = 'FATAL';
+    trace.fatalError = fatal.message;
+    return { data: null, error: { message: fatal.message }, debug: trace };
   }
-
-  return { data, error };
 }
 
 export async function getCreatorProjects() {
