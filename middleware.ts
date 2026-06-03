@@ -132,14 +132,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 4. Creator-only route protection
-  if (pathname.startsWith('/creator')) {
+  // 4. Creator-only route protection (Includes Creator Studio and Project Hub)
+  if (pathname.startsWith('/creator') || pathname === '/projects' || pathname.startsWith('/projects/create')) {
     if (user) {
       const is_creator = await isVerifiedCreator();
       const is_admin = await isAdminUser();
 
       if (!is_creator && !is_admin) {
-        console.log(`[Middleware] Non-creator user ${user.email} accessing /creator, redirecting to /feed`);
+        console.log(`[Middleware] Non-creator user ${user.email} accessing creator route ${pathname}, redirecting to /feed`);
         const url = request.nextUrl.clone()
         url.pathname = '/feed'
         const response = NextResponse.redirect(url)
@@ -148,7 +148,7 @@ export async function middleware(request: NextRequest) {
         })
         return response
       }
-      console.log(`[Middleware] Creator access granted to ${user.email}`);
+      console.log(`[Middleware] Creator/Admin access granted to ${user.email} for ${pathname}`);
     } else {
       console.log(`[Middleware] Guest accessing /creator, redirecting to /`);
       const url = request.nextUrl.clone()

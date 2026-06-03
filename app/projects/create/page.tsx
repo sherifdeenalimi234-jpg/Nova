@@ -70,8 +70,8 @@ export default function CreateProjectPage() {
       alert(result.error);
       setLoading(false);
     } else {
-      // PHASE 1.2A/C: Redirect directly to the Project Website Home Page
-      router.push(`/projects/${result.data.id}`);
+      // REDIRECT: To the Project Landing Page (Refactored Flow)
+      router.push(`/project-space/${result.data.id}`);
     }
   };
 

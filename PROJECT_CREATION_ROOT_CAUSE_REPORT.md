@@ -35,12 +35,12 @@ const { data, error } = await query.single(); // Now correctly filtered
 The project was successfully created and a valid `id` was returned and used for redirection. However, because the subsequent fetch on the landing page failed to apply the `id` filter, Supabase returned an error (likely `PGRST116`: JSON object requested, but multiple rows were returned) because the table contained more than one project. The application interpreted this error/null data as the project not existing.
 
 ## Route Parameters
-- **Destination Route**: `/projects/[id]`
+- **Destination Route**: `/project-space/[id]`
 - **Required Parameter**: Project `id` (UUID)
-- **Verified**: `router.push(\`/projects/\${result.data.id}\`)` matches the route structure and passes the correct UUID.
+- **Verified**: `router.push(`/project-space/${result.data.id}`)` matches the route structure and passes the correct UUID.
 
 ## Additional Fixes
-- Added `export const dynamic = "force-dynamic";` to `app/projects/[id]/page.tsx` and `app/projects/create/page.tsx` to prevent stale data during Next.js build-time prerendering or caching.
+- Added `export const dynamic = "force-dynamic";` to `app/project-space/[id]/page.tsx` and `app/projects/create/page.tsx` to prevent stale data during Next.js build-time prerendering or caching.
 - Added extensive debug logging to trace the creation and retrieval flow.
 
 ## Confirmation

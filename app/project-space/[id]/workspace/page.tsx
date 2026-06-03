@@ -63,11 +63,17 @@ export default function ProjectWorkspacePage() {
 
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        // Only allow access if owner or admin
-        if (!user || (data.creator_id !== user.id)) {
-           // In a real app we'd check project_members too,
-           // but for now we follow the owner-gated hub model
-           // router.push('/projects');
+        // Access control for workspace: Member-only
+        if (!user) {
+           router.push('/feed');
+           return;
+        }
+
+        const isMember = data.project_members?.some((m: any) => m.user_id === user.id);
+        const isAdmin = user.email === 'sherifdeenalimititilope@gmail.com'; // Admin fallback
+
+        if (!isMember && !isAdmin) {
+           router.push(`/project-space/${id}`);
         }
       }
       setLoading(false);
@@ -110,10 +116,10 @@ export default function ProjectWorkspacePage() {
     return (
       <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
         <Briefcase size={64} className="text-white/10 mb-6" />
-        <h2 className="text-xl font-black uppercase tracking-widest mb-2">Node Not Found</h2>
+        <h2 className="text-xl font-black uppercase tracking-widest mb-2">Node Offline</h2>
         <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] mb-8">This innovation node is offline or restricted.</p>
         <button onClick={() => router.push('/projects')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest">
-          Return to Projects
+          Return to Projects Hub
         </button>
       </div>
     );
