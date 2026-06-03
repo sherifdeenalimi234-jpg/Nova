@@ -11,7 +11,7 @@ interface ProjectCardProps {
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   return (
     <Link
-      href={`/projects/${project.id}`}
+      href={`/project-space/${project.id}`}
       className="block p-1 rounded-[2.5rem] bg-gradient-to-br from-white/10 to-transparent border border-white/5 group hover:border-nova-cyan/30 transition-all overflow-hidden"
     >
       <div className="bg-[#0a0a0a] rounded-[2.4rem] overflow-hidden">

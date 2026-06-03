@@ -18,11 +18,13 @@ import {
   Facebook,
   Youtube,
   Github,
-  Link as LinkIcon
+  Link as LinkIcon,
+  LayoutGrid
 } from 'lucide-react';
 import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export const dynamic = "force-dynamic";
 
@@ -44,12 +46,19 @@ export default function ProjectWebsiteHomePage() {
   const router = useRouter();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     async function fetchProject() {
       const { data, error } = await getProject(id);
       if (data) {
         setProject(data);
+
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && data.creator_id === user.id) {
+          setIsOwner(true);
+        }
       }
       setLoading(false);
     }
@@ -68,7 +77,7 @@ export default function ProjectWebsiteHomePage() {
     return (
       <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
         <Briefcase size={64} className="text-white/10 mb-6" />
-        <h2 className="text-xl font-black uppercase tracking-widest mb-2">Project Not Found</h2>
+        <h2 className="text-xl font-black uppercase tracking-widest mb-2">Node Offline</h2>
         <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] mb-8">The innovation node you are looking for does not exist or has been decommissioned.</p>
         <button onClick={() => router.push('/projects')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest">
           Return to Hub
@@ -113,16 +122,30 @@ export default function ProjectWebsiteHomePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
 
         <div className="relative px-6 pb-10 space-y-4">
-          <div className="flex gap-2">
-            <span className="px-3 py-1 rounded-full bg-nova-cyan/20 border border-nova-cyan/30 text-[8px] font-black uppercase tracking-widest text-nova-cyan backdrop-blur-md">
-              {project.project_type}
-            </span>
-            <span className="px-3 py-1 rounded-full bg-black/40 border border-white/10 text-[8px] font-black uppercase tracking-widest text-white/60 backdrop-blur-md flex items-center gap-1.5">
-              {project.visibility === 'Public' ? <Globe size={8} /> : <Lock size={8} />}
-              {project.visibility}
-            </span>
+          <div className="flex justify-between items-end">
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <span className="px-3 py-1 rounded-full bg-nova-cyan/20 border border-nova-cyan/30 text-[8px] font-black uppercase tracking-widest text-nova-cyan backdrop-blur-md">
+                  {project.project_type}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-black/40 border border-white/10 text-[8px] font-black uppercase tracking-widest text-white/60 backdrop-blur-md flex items-center gap-1.5">
+                  {project.visibility === 'Public' ? <Globe size={8} /> : <Lock size={8} />}
+                  {project.visibility}
+                </span>
+              </div>
+              <h1 className="text-4xl font-black uppercase tracking-tight leading-none">{project.title}</h1>
+            </div>
+
+            {isOwner && (
+              <Link
+                href={`/project-space/${id}/workspace`}
+                className="mb-1 p-4 rounded-2xl bg-white text-black hover:bg-nova-cyan transition-all group"
+              >
+                <LayoutGrid size={20} />
+              </Link>
+            )}
           </div>
-          <h1 className="text-4xl font-black uppercase tracking-tight leading-none">{project.title}</h1>
+
           <p className="text-sm text-white/60 uppercase tracking-widest leading-relaxed max-w-sm">
             {project.short_description}
           </p>
@@ -146,6 +169,34 @@ export default function ProjectWebsiteHomePage() {
           </div>
         </section>
 
+        {/* Team Section */}
+        <section>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-6">Active Reseachers</h2>
+          <div className="flex -space-x-3">
+             {(project.project_members || []).slice(0, 5).map((member: any, i: number) => (
+               <div key={i} className="w-12 h-12 rounded-full border-2 border-black bg-white/10 overflow-hidden">
+                 {member.profiles?.avatar_url ? (
+                   <img src={member.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-[10px] font-black">
+                     {member.profiles?.full_name?.charAt(0) || 'U'}
+                   </div>
+                 )}
+               </div>
+             ))}
+             {(project.project_members?.length || 0) > 5 && (
+               <div className="w-12 h-12 rounded-full border-2 border-black bg-white/5 flex items-center justify-center text-[10px] font-black text-white/40">
+                 +{(project.project_members?.length || 0) - 5}
+               </div>
+             )}
+             {(!project.project_members || project.project_members.length === 0) && (
+                <div className="text-[10px] font-black uppercase tracking-widest text-white/20 italic">
+                  Solitary Production
+                </div>
+             )}
+          </div>
+        </section>
+
         {/* Featured Section (Placeholder) */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
@@ -163,7 +214,7 @@ export default function ProjectWebsiteHomePage() {
         </section>
 
         {/* Project Highlights (Placeholder) */}
-        <section className="space-y-6">
+        <section className="space-y-6 pb-20">
           <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Node Highlights</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6">
             {[
@@ -188,7 +239,7 @@ export default function ProjectWebsiteHomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-white/5 bg-black px-6 py-16 space-y-12">
+      <footer className="mt-auto border-t border-white/5 bg-black px-6 py-16 space-y-12 pb-32">
         <div className="space-y-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
