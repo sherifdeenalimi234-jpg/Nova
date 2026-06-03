@@ -141,7 +141,7 @@ export async function getProject(projectIdOrSlug: string) {
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectIdOrSlug);
 
-  const query = supabase
+  let query = supabase
     .from('projects')
     .select(`
       *,
@@ -156,9 +156,9 @@ export async function getProject(projectIdOrSlug: string) {
     `);
 
   if (isUuid) {
-    query.eq('id', projectIdOrSlug);
+    query = query.eq('id', projectIdOrSlug);
   } else {
-    query.eq('slug', projectIdOrSlug);
+    query = query.eq('slug', projectIdOrSlug);
   }
 
   const { data, error } = await query.single();
