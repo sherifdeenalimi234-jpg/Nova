@@ -24,6 +24,8 @@ import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 
+export const dynamic = "force-dynamic";
+
 const XIcon = ({ size = 24, className = "" }) => (
   <svg
     viewBox="0 0 24 24"

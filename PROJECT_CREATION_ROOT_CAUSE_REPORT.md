@@ -1,41 +1,47 @@
-# PROJECT CREATION ROOT CAUSE REPORT
+# PROJECT CREATION ROOT CAUSE REPORT (AUDIT)
 
 ## Root Cause
-The "Project Not Found" error occurred due to a logic error in the `getProject` server action located in `lib/actions/projects.ts`.
+The Supabase JavaScript client query builder was being misused in the `getProject` server action. Filter methods like `.eq()` do not mutate the query object in-place; instead, they return a new query instance. The code was calling `.eq()` but discarding the returned filtered query, resulting in `await query.single()` executing an unfiltered query against the `projects` table.
 
-In the `getProject` function, the Supabase query object was initialized but the filters (`.eq('id', ...)` or `.eq('slug', ...)`) were called without reassigning the result back to the `query` variable. In Supabase's JavaScript client, these methods return a new query object and do not mutate the existing one in-place in a way that affects subsequent calls on the original variable if not chained or reassigned.
+## File Name
+`lib/actions/projects.ts`
 
-As a result, when `await query.single()` was called, it was executing a query without any filters. If the database contained more than one project that the user had permission to see (which is always true if they just created one and there are others), `single()` would fail because it found multiple records (or it would return the wrong record), leading to an error or unexpected data, which the frontend interpreted as "Project Not Found".
+## Function Name
+`getProject(projectIdOrSlug: string)`
 
-## Files Modified
-- `lib/actions/projects.ts`: Changed `const query` to `let query` and correctly reassigned the query object after applying filters.
+## Failing Condition
+```typescript
+if (isUuid) {
+  query.eq('id', projectIdOrSlug); // Result discarded
+} else {
+  query.eq('slug', projectIdOrSlug); // Result discarded
+}
 
-## Database Findings
-- **projects table**: Schema is correct and contains all necessary columns (`id`, `creator_id`, `slug`, `visibility`, etc.).
-- **project_members table**: Schema is correct.
-- **RLS policies**:
-    - `Projects visibility policy` correctly allows creators to see their own projects: `creator_id = auth.uid()`.
-    - `Creators can create projects` correctly enforces `auth.uid() = creator_id`.
-    - `Project creators can add themselves as members` correctly allows the owner membership to be created.
+const { data, error } = await query.single(); // Executed select * from projects. If >1 row exists, returns error.
+```
 
-## Routing Findings
-- The redirect in `app/projects/create/page.tsx` correctly uses the newly created project's ID: `router.push(\`/projects/\${result.data.id}\`)`.
-- The route `/projects/[id]` correctly picks up the ID and calls `getProject(id)`.
+## Exact Code Fix
+```typescript
+if (isUuid) {
+  query = query.eq('id', projectIdOrSlug); // Result reassigned
+} else {
+  query = query.eq('slug', projectIdOrSlug); // Result reassigned
+}
 
-## Query Findings
-- Before fix: `query.eq('id', id); await query.single();` -> Executed `select * from projects limit 1` (effectively, but failed because multiple rows were returned to the client).
-- After fix: `query = query.eq('id', id); await query.single();` -> Executes `select * from projects where id = '...' limit 1`.
+const { data, error } = await query.single(); // Now correctly filtered
+```
 
-## Verification Results
-- The code change ensures the query is correctly filtered by ID or Slug.
-- End-to-end flow:
-    1. `createProject` inserts project.
-    2. `createProject` inserts `project_members` (Owner).
-    3. `createProject` returns project data.
-    4. Frontend redirects to `/projects/[id]`.
-    5. `/projects/[id]/page.tsx` calls `getProject(id)`.
-    6. `getProject` now correctly filters by ID.
-    7. Project is found and rendered.
+## Why the project exists in the database but cannot be displayed
+The project was successfully created and a valid `id` was returned and used for redirection. However, because the subsequent fetch on the landing page failed to apply the `id` filter, Supabase returned an error (likely `PGRST116`: JSON object requested, but multiple rows were returned) because the table contained more than one project. The application interpreted this error/null data as the project not existing.
 
-## Required SQL
-No SQL changes were required as the database schema and RLS policies were already correctly implemented to support this flow. The issue was purely in the server-side TypeScript logic.
+## Route Parameters
+- **Destination Route**: `/projects/[id]`
+- **Required Parameter**: Project `id` (UUID)
+- **Verified**: `router.push(\`/projects/\${result.data.id}\`)` matches the route structure and passes the correct UUID.
+
+## Additional Fixes
+- Added `export const dynamic = "force-dynamic";` to `app/projects/[id]/page.tsx` and `app/projects/create/page.tsx` to prevent stale data during Next.js build-time prerendering or caching.
+- Added extensive debug logging to trace the creation and retrieval flow.
+
+## Confirmation
+The landing page can now load immediately after project creation because the `getProject` action correctly filters for the specific project ID, ensuring a successful data fetch even when multiple projects exist in the ecosystem.

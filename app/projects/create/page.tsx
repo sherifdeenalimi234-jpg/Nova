@@ -16,6 +16,8 @@ import ProjectTopBar from '@/components/projects/ProjectTopBar';
 import { createProject } from '@/lib/actions/projects';
 import { uploadFile } from '@/lib/supabase/storage';
 
+export const dynamic = "force-dynamic";
+
 export default function CreateProjectPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
