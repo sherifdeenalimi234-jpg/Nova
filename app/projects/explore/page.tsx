@@ -23,6 +23,7 @@ export default function PublicProjectsExplore() {
           project_members (count)
         `)
         .eq('visibility', 'Public')
+        .eq('status', 'Active')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -34,9 +35,16 @@ export default function PublicProjectsExplore() {
   }, []);
 
   const filteredProjects = projects.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
+
+  useEffect(() => {
+    if (!loading) {
+      console.log(`[Project Explore Audit] Projects returned from DB: ${projects.length}`);
+      console.log(`[Project Explore Audit] Projects rendered after filtering: ${filteredProjects.length}`);
+    }
+  }, [loading, projects.length, filteredProjects.length]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white pb-32">
