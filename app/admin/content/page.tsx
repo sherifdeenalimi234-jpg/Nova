@@ -5,11 +5,11 @@ import ContentModerationContent from '@/components/admin/ContentModerationConten
 export default async function AdminContentPage() {
   const supabase = await createClient();
 
-  const { data: pendingPosts } = await supabase
+  const { data: recentPosts } = await supabase
     .from('posts')
     .select('*, author:profiles(full_name)')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(50);
 
-  return <ContentModerationContent initialPosts={pendingPosts || []} />;
+  return <ContentModerationContent initialPosts={recentPosts || []} />;
 }

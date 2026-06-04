@@ -23,7 +23,6 @@ export default function PublicProjectsExplore() {
           project_members (count)
         `)
         .eq('visibility', 'Public')
-        .eq('status', 'Active')
         .order('created_at', { ascending: false });
 
       if (!error && data) {

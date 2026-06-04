@@ -8,7 +8,7 @@ export async function createProject(formData: {
   short_description: string;
   full_description: string;
   category: string;
-  visibility: 'Public' | 'Team Only' | 'Private';
+  visibility: 'Public' | 'Private';
   project_type: 'Live Project' | 'Showcase Project';
   tags?: string[];
   cover_image?: string;
@@ -74,13 +74,13 @@ export async function createProject(formData: {
 
     // 2. Automatic Ecosystem Post (Discovery Signal)
     // This allows the project to appear in the main Feed and RingSystem
+    // Status defaults to 'approved' in the database
     await supabase.from('posts').insert({
       author_id: user.id,
       title: project.title,
       content: project.short_description + `\n\n[Project ID: ${project.id}]`,
       post_type: 'project',
-      media_url: project.cover_image,
-      status: 'approved' // Automatically approved since it's a project launch from a verified creator
+      media_url: project.cover_image
     });
   }
 

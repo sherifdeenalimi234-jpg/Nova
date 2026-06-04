@@ -126,7 +126,7 @@ export default function ContentModeration({ initialPosts = [] }: { initialPosts?
               <div className="w-16 h-16 rounded-3xl border border-white/5 flex items-center justify-center bg-white/2">
                  <Check size={32} className="opacity-20" />
               </div>
-              <p className="text-[10px] uppercase tracking-[0.4em] font-black leading-relaxed">System Integrity Clear • No Pending Entries</p>
+              <p className="text-[10px] uppercase tracking-[0.4em] font-black leading-relaxed">System Integrity Clear • No Content Detected</p>
             </motion.div>
           ) : (
             filteredPosts.map((post, i) => (
@@ -192,14 +192,16 @@ export default function ContentModeration({ initialPosts = [] }: { initialPosts?
                       <button
                         onClick={() => handleAction(post.id, 'approved')}
                         className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-nova-green/10 border border-nova-green/20 text-nova-green hover:bg-nova-green/20 transition-all text-[9px] font-black uppercase tracking-widest"
+                        title="Keep and mark as safe"
                       >
-                        <Check size={16} /> OK
+                        <Check size={16} /> SAFE
                       </button>
                       <button
                         onClick={() => handleAction(post.id, 'rejected')}
                         className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest"
+                        title="Remove from ecosystem"
                       >
-                        <X size={16} /> FAIL
+                        <X size={16} /> PURGE
                       </button>
                     </>
                   )}
