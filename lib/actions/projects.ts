@@ -75,7 +75,7 @@ export async function createProject(formData: {
     // 2. Automatic Ecosystem Post (Discovery Signal)
     // This allows the project to appear in the main Feed and RingSystem
     // Status is explicitly set to 'approved' to ensure immediate visibility
-    await supabase.from('posts').insert({
+    const { error: postError } = await supabase.from('posts').insert({
       author_id: user.id,
       title: project.title,
       content: project.short_description + `\n\n[Project ID: ${project.id}]`,
@@ -83,6 +83,11 @@ export async function createProject(formData: {
       media_url: project.cover_image,
       status: 'approved'
     });
+
+    if (postError) {
+      console.error('[createProject] Discovery post creation failed:', postError);
+      // We don't block project creation if discovery fails, but we log it
+    }
   }
 
   revalidatePath('/projects');
@@ -126,7 +131,7 @@ export async function updateProject(projectId: string, formData: any) {
         .maybeSingle();
 
       if (!existingPost) {
-        await supabase.from('posts').insert({
+        const { error: postError } = await supabase.from('posts').insert({
           author_id: user.id,
           title: data.title,
           content: data.short_description + `\n\n[Project ID: ${projectId}]`,
@@ -134,6 +139,10 @@ export async function updateProject(projectId: string, formData: any) {
           media_url: data.cover_image,
           status: 'approved'
         });
+
+        if (postError) {
+          console.error('[updateProject] Discovery post creation failed:', postError);
+        }
       }
     }
 
