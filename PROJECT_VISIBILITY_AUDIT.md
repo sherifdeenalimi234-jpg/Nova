@@ -1,65 +1,50 @@
-# PROJECT VISIBILITY AUDIT REPORT & ROOT CAUSE ANALYSIS
+# PROJECTS VISIBILITY AUDIT REPORT
 
-## 1. Audit Report
+## 1. Verified Implementation Report
 
-### Database Tables & Systems Mapping
+### A. Project Creation Lifecycle
+- **Project Insertion**: Verified in `lib/actions/projects.ts`. Projects are saved with `status: 'Active'` and chosen `visibility`.
+- **Project Members**: Verified in `lib/actions/projects.ts`. Creators are automatically inserted as 'Owner'.
+- **Discovery Signals**:
+    - **Public**: Creates `activity_feed` entry and `posts` entry (explicitly set to `status: 'approved'`).
+    - **Private**: No discovery signals created.
 
-| System | Primary Table | Logic Source | Current Rules |
-| :--- | :--- | :--- | :--- |
-| **Explore** | `projects` | `app/projects/explore/page.tsx` | Fetches `visibility = 'Public'` AND `status = 'Active'`. |
-| **Project Hub** | `projects` | `app/projects/page.tsx` | Fetches projects where user is creator/member via `getCreatorProjects`. |
-| **Main Feed** | `posts` | `components/feed/FeedGrid.tsx` | Fetches `status = 'approved'`. |
-| **Discovery** | `posts` | `components/feed/RingSystem.tsx` | Fetches `status = 'approved'`. |
-| **Activity Feed** | `activity_feed` | `components/hub/ActivityFeed.tsx` | Fetches all recent activity log entries. |
-| **Search** | `projects` | `app/projects/explore/page.tsx` | Client-side filter on Public/Active projects. |
+### B. Project Hub (Creator View)
+- **Data Retrieval**: Powered by `getCreatorProjects`.
+- **Logic**: Now uses a two-step retrieval (Fetch IDs from `project_members` -> Fetch Projects by ID). This bypasses complex join-induced RLS recursion.
+- **Persistence**: Since it queries `project_members`, the project remains visible as long as the membership exists, across all sessions.
 
-### Visibility Definitions (Current)
-- **Public**: Visible to everyone if status is 'Active'.
-- **Team Only**: Intended for restricted group access (to be removed).
-- **Private**: Visible only to creator/members.
-
-### Workflow Dependencies (Current)
-- **Approval**: `posts` table defaults to `status = 'pending'`, requiring admin intervention via `moderatePost`.
-- **Activation**: Projects often default to 'Draft' or require 'Active' status for public visibility.
-- **Publishing**: Implicitly tied to both project visibility and post approval.
+### C. Discovery Layers
+- **Explore**: Queries `projects` where `visibility = 'Public'`. Status check removed to ensure immediate visibility.
+- **Rings & Feed**: Powered by `posts` table where `status = 'approved'`. New projects create these records immediately.
 
 ---
 
 ## 2. Root Cause Analysis
 
-The complexity in the existing architecture stems from **Fragmented State Management**.
-
-1.  **Redundant Flags**: Using both `visibility` (Public/Private) and `status` (Draft/Active/Archived) creates a matrix of visibility that is hard to manage. A 'Public' project might still be invisible because its status is 'Draft'.
-2.  **Gated Discovery**: The `posts` table, which powers the main discovery engines (Feed and Ring System), is gated by a manual `status = 'approved'` check. This creates a bottleneck and prevents immediate discovery.
-3.  **Inconsistent Creation Logic**: Project creation manually overrides the post approval (`status: 'approved'`), while standard post creation does not. This bypasses the intended safety net inconsistently.
-4.  **Legacy "Team Only" Mode**: The 'Team Only' visibility adds a third layer of RLS logic that complicates queries and isn't strictly necessary for the core Public/Private distinction.
+| Problem | Root Cause | Fix |
+| :--- | :--- | :--- |
+| **Missing in Explore** | Legacy `status = 'Active'` check or RLS delay. | Removed explicit status check; Hardened RLS. |
+| **Missing in Rings/Feed** | Dependence on DB default for `status`, which might lag or be overridden. | Explicitly set `status: 'approved'` in Server Action. |
+| **Missing in Hub** | Complex Inner Join in `getCreatorProjects` failing under specific RLS conditions. | Simplified to ID-based multi-step query. |
+| **Visibility Sync Failure** | `updateProject` didn't trigger discovery signals when moving from Private to Public. | Added discovery signal logic to `updateProject`. |
 
 ---
 
-## 3. Targeted Solution Plan
-
-- **Unify Visibility**: Collapse to a binary `Public` or `Private` state.
-- **Auto-Discovery**: Default `posts.status` to `approved` so creation results in immediate visibility.
-- **Simplify RLS**: Remove status-based visibility gating. If it's Public, it's public.
-- **Repurpose Admin**: Transition Admin Dashboard from an "Approval Gate" to a "Moderation Shield" (reactive instead of proactive).
+## 3. Files Involved
+- `lib/actions/projects.ts`: Core logic for creation, update, and retrieval.
+- `app/projects/explore/page.tsx`: Explore page query.
+- `supabase/migrations/20240616000000_visibility_final_fix.sql`: Security and data integrity enforcement.
 
 ---
 
 ## 4. Verification Checklist
 
-- [ ] **Database Integrity**
-    - [ ] `projects` table visibility constraint is `('Public', 'Private')`.
-    - [ ] `posts` table default status is `approved`.
-    - [ ] Existing 'Team Only' projects migrated to 'Private'.
-    - [ ] Existing 'pending' posts migrated to 'approved'.
-- [ ] **Project Creation & Privacy**
-    - [ ] Public Project creation generates a discovery post.
-    - [ ] Private Project creation DOES NOT generate a discovery post.
-    - [ ] Private Project is visible in Creator Hub but hidden from Explore.
-- [ ] **Discovery Workflow**
-    - [ ] New Public projects appear in Explore immediately (status check removed).
-    - [ ] New Public projects appear in Feed/RingSystem immediately (auto-approved).
-- [ ] **Admin Moderation**
-    - [ ] Admin dashboard shows recent content instead of just pending content.
-    - [ ] "PURGE" action removes content from ecosystem.
-    - [ ] "SAFE" action confirms content integrity.
+- [x] **Creation**: Project record + Owner membership created.
+- [x] **Discovery (Public)**: `posts` record created with `status: 'approved'`.
+- [x] **Discovery (Public)**: `activity_feed` record created.
+- [x] **Privacy (Private)**: No `posts` or `activity_feed` records created.
+- [x] **Hub Persistence**: Project appears in Hub immediately and persists across login/logout.
+- [x] **Explore Visibility**: Public projects appear in Explore regardless of status.
+- [x] **Sync Visibility**: Moving a project from Private -> Public triggers discovery signals.
+- [x] **RLS Integrity**: Guests cannot see Private projects; Members can always see their projects.
