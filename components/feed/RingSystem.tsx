@@ -6,11 +6,13 @@ import { X, Share2, Info, ChevronRight } from "lucide-react";
 
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 const RingSystem = () => {
   const [signals, setSignals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSignal, setSelectedSignal] = useState<any | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchSignals() {
@@ -29,7 +31,8 @@ const RingSystem = () => {
           color: post.post_type === 'survey' ? 'purple' : post.post_type === 'project' ? 'green' : 'cyan',
           icon: post.title.substring(0, 2).toUpperCase(),
           content: post.content,
-          title: post.title
+          title: post.title,
+          type: post.post_type
         }));
         setSignals(mappedSignals);
       }
@@ -37,6 +40,20 @@ const RingSystem = () => {
     }
     fetchSignals();
   }, []);
+
+  const handleAccessNode = () => {
+    if (!selectedSignal) return;
+
+    if (selectedSignal.type === 'project') {
+      // Extract Project ID from content if present: "[Project ID: uuid]"
+      const match = selectedSignal.content.match(/\[Project ID: ([0-9a-f-]{36})\]/);
+      if (match && match[1]) {
+        router.push(`/project-space/${match[1]}`);
+        setSelectedSignal(null);
+      }
+    }
+    // Handle other types if necessary
+  };
 
   const getColorClass = (color: string) => {
     switch (color) {
@@ -140,7 +157,7 @@ const RingSystem = () => {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
                   <p className="text-xl text-white/80 leading-relaxed font-light italic mb-8">
-                    "{selectedSignal.content}"
+                    "{selectedSignal.content.split('\n\n[')[0]}"
                   </p>
 
                   <div className="flex items-center justify-between pt-6 border-t border-white/10">
@@ -150,10 +167,15 @@ const RingSystem = () => {
                         <span className="text-[10px] uppercase tracking-widest">Share Signal</span>
                       </button>
                     </div>
-                    <button className="flex items-center gap-2 text-nova-cyan group">
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Access Node</span>
-                      <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    {selectedSignal.type === 'project' && (
+                      <button
+                        onClick={handleAccessNode}
+                        className="flex items-center gap-2 text-nova-cyan group"
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Access Node</span>
+                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

@@ -62,13 +62,25 @@ export async function createProject(formData: {
     return { error: memberError.message };
   }
 
-  // Activity Feed Integration
+  // Ecosystem Discovery Integration (Public Projects Only)
   if (formData.visibility === 'Public') {
+    // 1. Activity Feed Entry
     await supabase.from('activity_feed').insert({
       user_id: user.id,
       action: 'LAUNCHED NEW PROJECT',
       entity_id: project.id,
       entity_type: 'project'
+    });
+
+    // 2. Automatic Ecosystem Post (Discovery Signal)
+    // This allows the project to appear in the main Feed and RingSystem
+    await supabase.from('posts').insert({
+      author_id: user.id,
+      title: project.title,
+      content: project.short_description + `\n\n[Project ID: ${project.id}]`,
+      post_type: 'project',
+      media_url: project.cover_image,
+      status: 'approved' // Automatically approved since it's a project launch from a verified creator
     });
   }
 
