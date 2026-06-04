@@ -65,12 +65,16 @@ export async function createProject(formData: {
   // Ecosystem Discovery Integration (Public Projects Only)
   if (formData.visibility === 'Public') {
     // 1. Activity Feed Entry
-    await supabase.from('activity_feed').insert({
+    const { error: activityError } = await supabase.from('activity_feed').insert({
       user_id: user.id,
       action: 'LAUNCHED NEW PROJECT',
       entity_id: project.id,
       entity_type: 'project'
     });
+
+    if (activityError) {
+      console.error('[createProject] Activity feed entry failed:', JSON.stringify(activityError, null, 2));
+    }
 
     // 2. Automatic Ecosystem Post (Discovery Signal)
     // This allows the project to appear in the main Feed and RingSystem
@@ -85,7 +89,7 @@ export async function createProject(formData: {
     });
 
     if (postError) {
-      console.error('[createProject] Discovery post creation failed:', postError);
+      console.error('[createProject] Discovery post creation failed:', JSON.stringify(postError, null, 2));
       // We don't block project creation if discovery fails, but we log it
     }
   }
@@ -114,12 +118,16 @@ export async function updateProject(projectId: string, formData: any) {
     // Ecosystem Discovery Integration (Visibility Transition to Public)
     if (formData.visibility === 'Public') {
       // 1. Activity Feed Entry
-      await supabase.from('activity_feed').insert({
+      const { error: activityError } = await supabase.from('activity_feed').insert({
         user_id: user.id,
         action: 'UPDATED PROJECT SPECS',
         entity_id: projectId,
         entity_type: 'project'
       });
+
+      if (activityError) {
+        console.error('[updateProject] Activity feed entry failed:', JSON.stringify(activityError, null, 2));
+      }
 
       // 2. Discovery Signal (Ensure project exists in feeds)
       // Check if a post already exists to avoid duplicates
@@ -141,7 +149,7 @@ export async function updateProject(projectId: string, formData: any) {
         });
 
         if (postError) {
-          console.error('[updateProject] Discovery post creation failed:', postError);
+          console.error('[updateProject] Discovery post creation failed:', JSON.stringify(postError, null, 2));
         }
       }
     }
