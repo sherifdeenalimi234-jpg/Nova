@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Heart, Eye, MoreVertical, Loader2, ListTodo, BarChart3 } from "lucide-react";
+import { Heart, Eye, MoreVertical, Loader2, ListTodo, BarChart3, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import TakeSurveyModal from "./TakeSurveyModal";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const FeedGrid = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSurvey, setSelectedSurvey] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchPosts() {
@@ -30,6 +32,13 @@ const FeedGrid = () => {
     }
     fetchPosts();
   }, []);
+
+  const handleProjectClick = (content: string) => {
+    const match = content.match(/\[Project ID: ([0-9a-f-]{36})\]/);
+    if (match && match[1]) {
+      router.push(`/project-space/${match[1]}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -92,6 +101,18 @@ const FeedGrid = () => {
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] bg-repeat" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
+            {/* Project Overlay */}
+            {post.post_type === 'project' && (
+               <div className="absolute inset-0 flex items-center justify-center bg-nova-cyan/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleProjectClick(post.content)}
+                    className="px-8 py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-110 transition-all flex items-center gap-3"
+                  >
+                     <ChevronRight size={16} /> View Node
+                  </button>
+               </div>
+            )}
+
             {/* Survey Overlay */}
             {post.post_type === 'survey' && (
                <div className="absolute inset-0 flex items-center justify-center bg-nova-purple/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -141,7 +162,7 @@ const FeedGrid = () => {
 
             <p className="text-[13px] text-white/70 leading-relaxed font-light">
               <span className="font-bold text-white mr-2">{post.author?.full_name}</span>
-              {post.content}
+              {post.content.split('\n\n[')[0]}
             </p>
           </div>
         </article>
