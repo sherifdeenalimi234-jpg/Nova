@@ -29,15 +29,18 @@ export async function createSurvey(data: {
   if (error) return { error };
 
   // Also create a post for the feed
-  await supabase.from('posts').insert({
+  const { error: postError } = await supabase.from('posts').insert({
     author_id: user.id,
     title: data.title,
     content: data.description,
     post_type: 'survey',
-    status: 'approved', // Surveys by creators are auto-approved for this phase?
-    // Or maybe they also go through moderation. Let's keep status pending to be consistent.
+    status: 'approved',
     media_url: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=1000"
   });
+
+  if (postError) {
+    console.error('[createSurvey] Discovery post creation failed:', postError);
+  }
 
   revalidatePath('/');
   return { data: survey };
