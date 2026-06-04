@@ -32,8 +32,8 @@ export async function createPost(formData: {
       title: formData.title,
       content: formData.content,
       post_type: formData.post_type,
-      media_url: formData.media_url,
-      status: 'pending' // Posts must be approved by admin
+      media_url: formData.media_url
+      // status defaults to 'approved' in the database
     })
     .select()
     .single();
