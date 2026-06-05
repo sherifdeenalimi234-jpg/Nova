@@ -2,12 +2,11 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Survey, SurveyStats } from '@/lib/types/surveys';
+import { Survey, SurveyStats, SurveyQuestion, SurveyOption } from '@/lib/types/surveys';
 
 export async function createSurvey(data: {
   title: string;
   description: string;
-  questions: any[];
   category?: string;
   status?: 'draft' | 'published' | 'closed';
 }) {
@@ -16,41 +15,168 @@ export async function createSurvey(data: {
 
   if (!user) return { error: "Authentication required." };
 
-  // Create the survey record
   const { data: survey, error } = await supabase
     .from('surveys')
     .insert({
       creator_id: user.id,
       title: data.title,
       description: data.description,
-      questions: data.questions,
       category: data.category || 'General',
-      status: data.status || 'draft'
+      status: data.status || 'draft',
+      settings: { anonymous: false, one_response_per_participant: true }
     })
     .select()
     .single();
 
   if (error) return { error };
 
-  // Also create a post for the feed if published
-  if (data.status === 'published') {
-    const { error: postError } = await supabase.from('posts').insert({
-      author_id: user.id,
-      title: data.title,
-      content: data.description,
-      post_type: 'survey',
-      status: 'approved',
-      media_url: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=1000"
-    });
-
-    if (postError) {
-      console.error('[createSurvey] Discovery post creation failed:', postError);
-    }
-  }
-
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
   return { data: survey };
+}
+
+export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Survey, error?: any }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { data: survey, error: surveyError } = await supabase
+    .from('surveys')
+    .select(`
+      *,
+      questions:survey_questions(
+        *,
+        options:survey_options(*)
+      )
+    `)
+    .eq('id', surveyId)
+    .eq('creator_id', user.id)
+    .order('order_index', { foreignTable: 'survey_questions', ascending: true })
+    .order('order_index', { foreignTable: 'survey_questions.survey_options', ascending: true })
+    .single();
+
+  if (surveyError) return { error: surveyError };
+
+  return { data: survey as Survey };
+}
+
+export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { data, error } = await supabase
+    .from('surveys')
+    .update(updates)
+    .eq('id', surveyId)
+    .eq('creator_id', user.id)
+    .select()
+    .single();
+
+  if (error) return { error };
+
+  revalidatePath(`/creator/surveys/${surveyId}/builder`);
+  return { data };
+}
+
+export async function saveQuestion(surveyId: string, question: Partial<SurveyQuestion>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  // Validate ownership of survey
+  const { data: survey } = await supabase
+    .from('surveys')
+    .select('id')
+    .eq('id', surveyId)
+    .eq('creator_id', user.id)
+    .single();
+
+  if (!survey) return { error: "Survey not found or access denied." };
+
+  const { id, options, created_at, updated_at, ...questionData } = question as any;
+
+  let result;
+  if (id && !id.startsWith('temp-')) {
+    result = await supabase
+      .from('survey_questions')
+      .update(questionData)
+      .eq('id', id)
+      .eq('survey_id', surveyId)
+      .select()
+      .single();
+  } else {
+    result = await supabase
+      .from('survey_questions')
+      .insert({ ...questionData, survey_id: surveyId })
+      .select()
+      .single();
+  }
+
+  if (result.error) return { error: result.error };
+  return { data: result.data };
+}
+
+export async function deleteQuestion(surveyId: string, questionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { error } = await supabase
+    .from('survey_questions')
+    .delete()
+    .eq('id', questionId)
+    .eq('survey_id', surveyId);
+
+  return { error };
+}
+
+export async function saveOption(questionId: string, option: Partial<SurveyOption>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { id, created_at, updated_at, ...optionData } = option as any;
+
+  let result;
+  if (id && !id.startsWith('temp-')) {
+    result = await supabase
+      .from('survey_options')
+      .update(optionData)
+      .eq('id', id)
+      .eq('question_id', questionId)
+      .select()
+      .single();
+  } else {
+    result = await supabase
+      .from('survey_options')
+      .insert({ ...optionData, question_id: questionId })
+      .select()
+      .single();
+  }
+
+  if (result.error) return { error: result.error };
+  return { data: result.data };
+}
+
+export async function deleteOption(questionId: string, optionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { error } = await supabase
+    .from('survey_options')
+    .delete()
+    .eq('id', optionId)
+    .eq('question_id', questionId);
+
+  return { error };
 }
 
 export async function getCreatorSurveys(page: number = 1, pageSize: number = 10): Promise<{ data?: Survey[], count?: number, error?: any }> {
@@ -64,14 +190,20 @@ export async function getCreatorSurveys(page: number = 1, pageSize: number = 10)
 
   const { data, error, count } = await supabase
     .from('surveys')
-    .select('*, survey_responses(count)', { count: 'exact' })
+    .select('*, response_count:survey_responses(count)', { count: 'exact' })
     .eq('creator_id', user.id)
     .order('created_at', { ascending: false })
     .range(from, to);
 
   if (error) return { error };
 
-  return { data: data as Survey[], count: count || 0 };
+  // Map response_count to a number
+  const formattedData = data.map(s => ({
+    ...s,
+    response_count: (s as any).response_count?.[0]?.count || 0
+  }));
+
+  return { data: formattedData as Survey[], count: count || 0 };
 }
 
 export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: any }> {
@@ -82,7 +214,7 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
 
   const { data: surveys, error } = await supabase
     .from('surveys')
-    .select('status, survey_responses(count)')
+    .select('status, response_count:survey_responses(count)')
     .eq('creator_id', user.id);
 
   if (error) return { error };
@@ -92,7 +224,7 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
     active: surveys.filter(s => s.status === 'published').length,
     draft: surveys.filter(s => s.status === 'draft').length,
     closed: surveys.filter(s => s.status === 'closed').length,
-    totalResponses: surveys.reduce((acc, s) => acc + (s.survey_responses?.[0]?.count || 0), 0)
+    totalResponses: surveys.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
   };
 
   return { data: stats };
@@ -108,27 +240,22 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
     .from('surveys')
     .update({ status })
     .eq('id', surveyId)
-    .eq('creator_id', user.id) // Ownership validation
+    .eq('creator_id', user.id)
     .select()
     .single();
 
   if (error) return { error };
 
-  // Handle Feed Integration for status updates
   if (status === 'published') {
-    // Upsert discovery post
     await supabase.from('posts').upsert({
       author_id: user.id,
-      title: data.title, // Title might have changed, but upsert on title is risky if not unique
-      content: data.description,
+      title: data.title,
+      content: data.description || '',
       post_type: 'survey',
       status: 'approved',
-      media_url: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=1000"
+      media_url: data.cover_image || "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=1000"
     }, { onConflict: 'author_id, title' });
   } else {
-    // If unpublished or closed, we could delete the post,
-    // but the 'posts' table doesn't have a direct link to survey_id.
-    // For now, we'll leave it as is or handle it by title match.
     await supabase.from('posts')
       .delete()
       .eq('author_id', user.id)
@@ -138,6 +265,7 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
 
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
+  revalidatePath(`/creator/surveys/${surveyId}/builder`);
   return { data };
 }
 
@@ -149,14 +277,20 @@ export async function duplicateSurvey(surveyId: string) {
 
   const { data: existingSurvey, error: fetchError } = await supabase
     .from('surveys')
-    .select('*')
+    .select(`
+      *,
+      questions:survey_questions(
+        *,
+        options:survey_options(*)
+      )
+    `)
     .eq('id', surveyId)
     .eq('creator_id', user.id)
     .single();
 
   if (fetchError || !existingSurvey) return { error: "Survey not found." };
 
-  const { id, created_at, updated_at, ...surveyData } = existingSurvey;
+  const { id, created_at, updated_at, questions, ...surveyData } = existingSurvey as any;
 
   const { data: newSurvey, error: insertError } = await supabase
     .from('surveys')
@@ -169,6 +303,23 @@ export async function duplicateSurvey(surveyId: string) {
     .single();
 
   if (insertError) return { error: insertError };
+
+  // Duplicate questions and options
+  for (const q of (questions || [])) {
+    const { id: oldQid, created_at: qca, updated_at: qua, options, ...qData } = q;
+    const { data: newQ, error: qError } = await supabase
+      .from('survey_questions')
+      .insert({ ...qData, survey_id: newSurvey.id })
+      .select()
+      .single();
+
+    if (!qError && options) {
+      for (const o of options) {
+        const { id: oldOid, created_at: oca, updated_at: oua, ...oData } = o;
+        await supabase.from('survey_options').insert({ ...oData, question_id: newQ.id });
+      }
+    }
+  }
 
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
@@ -185,7 +336,7 @@ export async function deleteSurvey(surveyId: string) {
     .from('surveys')
     .delete()
     .eq('id', surveyId)
-    .eq('creator_id', user.id); // Ownership validation
+    .eq('creator_id', user.id);
 
   if (error) return { error };
 
@@ -194,19 +345,32 @@ export async function deleteSurvey(surveyId: string) {
   return { success: true };
 }
 
-export async function submitSurveyResponse(surveyId: string, answers: any) {
+export async function submitSurveyResponse(surveyId: string, answers: Record<string, any>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Authentication required." };
+  // If anonymous mode is disabled in settings, require auth
+  const { data: survey } = await supabase
+    .from('surveys')
+    .select('settings')
+    .eq('id', surveyId)
+    .single();
 
-  const { error } = await supabase
+  if (survey?.settings?.anonymous === false && !user) {
+    return { error: "Authentication required for this survey." };
+  }
+
+  const { data, error } = await supabase
     .from('survey_responses')
     .insert({
       survey_id: surveyId,
-      user_id: user.id,
-      answers: answers
-    });
+      participant_id: user?.id || null,
+      responses: answers
+    })
+    .select()
+    .single();
 
-  return { error };
+  if (error) return { error };
+
+  return { data };
 }

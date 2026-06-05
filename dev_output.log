@@ -57,3 +57,7 @@
 [Middleware] Guest accessing protected route /creator/surveys/new, redirecting to /
 [Middleware] Path: /, User: Guest
  GET / 200 in 107ms
+ ✓ Compiled in 6.4s (729 modules)
+ ✓ Compiled in 2.3s (729 modules)
+[Middleware] Path: /test-builder, User: Guest
+ ○ Compiling /test-builder ...
