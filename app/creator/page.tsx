@@ -5,13 +5,16 @@ import { createClient } from '@/lib/supabase/client';
 import {
   Plus,
   FileText,
-  Briefcase,
   Search,
   TrendingUp,
   Users,
   Eye,
   ArrowUpRight,
-  User
+  User,
+  LayoutDashboard,
+  ClipboardList,
+  CheckCircle2,
+  FileEdit
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -24,6 +27,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import Link from 'next/link';
+import { getSurveyStats, getCreatorSurveys } from '@/lib/actions/surveys';
+import { Survey, SurveyStats } from '@/lib/types/surveys';
 
 const data = [
   { name: 'Mon', views: 400 },
@@ -37,29 +42,42 @@ const data = [
 
 export default function CreatorDashboard() {
   const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState<SurveyStats | null>(null);
+  const [recentSurveys, setRecentSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
+        // Fetch Profile
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*, creator_profiles(*)')
           .eq('id', user.id)
           .single();
-        setProfile(data);
+        setProfile(profileData);
+
+        // Fetch Real Stats
+        const statsRes = await getSurveyStats();
+        if (statsRes.data) setStats(statsRes.data);
+
+        // Fetch Recent Surveys
+        const surveysRes = await getCreatorSurveys();
+        if (surveysRes.data) setRecentSurveys(surveysRes.data.slice(0, 3));
       }
       setLoading(false);
     };
-    fetchProfile();
+    fetchData();
   }, []);
+
+  const skeletonClasses = "animate-pulse bg-white/5 rounded-2xl";
 
   return (
     <div className="space-y-10">
       {/* Creator Status Section - Mobile Only */}
-      {!loading && profile && (
+      {!loading && profile ? (
         <section className="lg:hidden p-6 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-nova-cyan/5 to-nova-purple/5 backdrop-blur-xl mb-6">
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
@@ -95,6 +113,8 @@ export default function CreatorDashboard() {
               </div>
            </div>
         </section>
+      ) : loading && (
+        <div className="lg:hidden h-40 w-full animate-pulse bg-white/5 rounded-[2.5rem] mb-6" />
       )}
 
       {/* Welcome Section */}
@@ -104,37 +124,44 @@ export default function CreatorDashboard() {
            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage your innovation ecosystem</p>
         </div>
         <div className="flex gap-4">
-           <button className="px-6 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-              Publish Research
-           </button>
+           <Link href="/creator/surveys/new" className="px-6 py-3 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center gap-2">
+              <Plus size={14} />
+              Create Survey
+           </Link>
         </div>
       </section>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Engagement', value: '24.8K', icon: TrendingUp, color: 'text-nova-cyan', bg: 'bg-nova-cyan/10' },
-          { label: 'Profile Nodes', value: '1,204', icon: Users, color: 'text-nova-purple', bg: 'bg-nova-purple/10' },
-          { label: 'Research Reach', value: '852', icon: Eye, color: 'text-nova-green', bg: 'bg-nova-green/10' },
-          { label: 'Active Surveys', value: '12', icon: Search, color: 'text-nova-orange', bg: 'bg-nova-orange/10' },
-        ].map((stat, i) => (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            key={stat.label}
-            className="p-6 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all"
-          >
-             <div className="flex items-center justify-between mb-4">
-                <div className={`w-10 h-10 rounded-2xl ${stat.bg} flex items-center justify-center border border-white/5`}>
-                   <stat.icon size={18} className={stat.color} />
-                </div>
-                <ArrowUpRight size={14} className="text-white/20 group-hover:text-white transition-colors" />
-             </div>
-             <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{stat.label}</p>
-             <h3 className="text-2xl font-black">{stat.value}</h3>
-          </motion.div>
-        ))}
+        {loading ? (
+          [1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5" />
+          ))
+        ) : (
+          [
+            { label: 'Total Surveys', value: stats?.total || 0, icon: ClipboardList, color: 'text-nova-cyan', bg: 'bg-nova-cyan/10' },
+            { label: 'Active Surveys', value: stats?.active || 0, icon: CheckCircle2, color: 'text-nova-green', bg: 'bg-nova-green/10' },
+            { label: 'Draft Surveys', value: stats?.draft || 0, icon: FileEdit, color: 'text-nova-orange', bg: 'bg-nova-orange/10' },
+            { label: 'Total Responses', value: stats?.totalResponses || 0, icon: Users, color: 'text-nova-purple', bg: 'bg-nova-purple/10' },
+          ].map((stat, i) => (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              key={stat.label}
+              className="p-6 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all"
+            >
+               <div className="flex items-center justify-between mb-4">
+                  <div className={`w-10 h-10 rounded-2xl ${stat.bg} flex items-center justify-center border border-white/5`}>
+                     <stat.icon size={18} className={stat.color} />
+                  </div>
+                  <ArrowUpRight size={14} className="text-white/20 group-hover:text-white transition-colors" />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{stat.label}</p>
+               <h3 className="text-2xl font-black">{stat.value}</h3>
+            </motion.div>
+          ))
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -184,25 +211,36 @@ export default function CreatorDashboard() {
         {/* Quick Actions / Recent Activity */}
         <section className="space-y-6">
            <div className="p-8 rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl h-full">
-              <h2 className="text-sm font-black uppercase tracking-widest mb-8">Recent Submissions</h2>
+              <h2 className="text-sm font-black uppercase tracking-widest mb-8">Recent Surveys</h2>
               <div className="space-y-6">
-                 {[
-                   { title: 'Nexus Protocol Alpha', type: 'Project', status: 'Approved', color: 'text-nova-green' },
-                   { title: 'Neural Grid Dynamics', type: 'Research', status: 'Pending', color: 'text-nova-orange' },
-                   { title: 'Ecosystem Survey v2', type: 'Survey', status: 'Live', color: 'text-nova-cyan' },
-                 ].map((item, i) => (
-                   <div key={i} className="flex items-center justify-between group cursor-pointer">
-                      <div>
-                         <h4 className="text-[11px] font-bold text-white group-hover:text-nova-cyan transition-colors">{item.title}</h4>
-                         <p className="text-[8px] text-white/30 uppercase tracking-widest">{item.type}</p>
-                      </div>
-                      <span className={`text-[8px] font-black uppercase tracking-widest ${item.color}`}>{item.status}</span>
-                   </div>
-                 ))}
+                 {loading ? (
+                    [1, 2, 3].map(i => (
+                       <div key={i} className="h-12 w-full animate-pulse bg-white/5 rounded-xl" />
+                    ))
+                 ) : recentSurveys.length > 0 ? (
+                    recentSurveys.map((survey, i) => (
+                      <Link href={`/creator/surveys`} key={survey.id} className="flex items-center justify-between group cursor-pointer">
+                         <div className="min-w-0 flex-1 mr-4">
+                            <h4 className="text-[11px] font-bold text-white group-hover:text-nova-cyan transition-colors truncate">{survey.title}</h4>
+                            <p className="text-[8px] text-white/30 uppercase tracking-widest">{survey.category || 'General'}</p>
+                         </div>
+                         <span className={`text-[8px] font-black uppercase tracking-widest ${
+                            survey.status === 'published' ? 'text-nova-green' :
+                            survey.status === 'draft' ? 'text-nova-orange' : 'text-white/40'
+                         }`}>
+                            {survey.status}
+                         </span>
+                      </Link>
+                    ))
+                 ) : (
+                    <div className="text-center py-10">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-white/20">No recent surveys</p>
+                    </div>
+                 )}
               </div>
-              <button className="w-full mt-10 py-4 rounded-2xl border border-white/5 bg-white/2 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">
-                 View All Activity
-              </button>
+              <Link href="/creator/surveys" className="block w-full mt-10 py-4 rounded-2xl border border-white/5 bg-white/2 text-[9px] font-black uppercase tracking-widest text-center hover:bg-white/5 transition-all">
+                 View All Surveys
+              </Link>
            </div>
         </section>
       </div>
@@ -212,9 +250,10 @@ export default function CreatorDashboard() {
          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mb-8 ml-2">Quick Launch</h2>
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { name: 'Create Post', icon: FileText, href: '/creator/posts/new' },
-              { name: 'Start Survey', icon: Search, href: '/creator/surveys/new' },
-              { name: 'Edit Portfolio', icon: User, href: '/creator/portfolio' },
+              { name: 'View Drafts', icon: FileEdit, href: '/creator/surveys?status=draft' },
+              { name: 'Active Surveys', icon: CheckCircle2, href: '/creator/surveys?status=published' },
+              { name: 'Analytics', icon: TrendingUp, href: '/creator/analytics' },
+              { name: 'Profile Settings', icon: User, href: '/creator/settings' },
             ].map((action) => (
               <Link
                 key={action.name}
