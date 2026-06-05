@@ -124,7 +124,7 @@ export default function SurveyDashboard({
                     {recentActivity.map((survey) => (
                        <Link
                          key={survey.id}
-                         href={`/survey/manage/${survey.id}`}
+                         href={`/survey/create/${survey.id}`}
                          className="p-6 flex items-center justify-between hover:bg-white/[0.01] transition-colors group"
                        >
                           <div className="flex items-center gap-6">

@@ -133,7 +133,7 @@ export async function duplicateSurvey(surveyId: string) {
     if (qError) throw qError;
 
     if (q.survey_options && q.survey_options.length > 0) {
-      const optionsToInsert = q.survey_options.map(o => ({
+      const optionsToInsert = q.survey_options.map((o: any) => ({
         question_id: newQ.id,
         option_text: o.option_text,
         order_index: o.order_index

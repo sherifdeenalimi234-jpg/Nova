@@ -207,7 +207,7 @@ export default function SurveyManagementView({ initialSurveys }: { initialSurvey
                          <Link href={`/survey/${survey.id}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white transition-all" title="Preview">
                             <Eye size={18} />
                          </Link>
-                         <Link href={`/survey/manage/${survey.id}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white transition-all" title="Edit">
+                         <Link href={`/survey/create/${survey.id}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white transition-all" title="Edit">
                             <Edit size={18} />
                          </Link>
                          <button
