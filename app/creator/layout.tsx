@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import MobileNav from '@/components/creator/MobileNav';
+import { CreatorErrorBoundary } from '@/components/creator/CreatorErrorBoundary';
 
 export default async function CreatorLayout({
   children,
@@ -110,7 +111,9 @@ export default async function CreatorLayout({
         </header>
 
         <div className="p-8">
-           {children}
+           <CreatorErrorBoundary>
+              {children}
+           </CreatorErrorBoundary>
         </div>
       </main>
 

@@ -17,7 +17,8 @@ import {
   Save,
   Rocket
 } from 'lucide-react';
-import { motion, Reorder } from 'framer-motion';
+import { motion, Reorder, AnimatePresence } from 'framer-motion';
+import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
 type QuestionType = 'text' | 'multiple-choice' | 'rating' | 'file';
 
@@ -34,8 +35,11 @@ export default function CreateSurveyPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
   const [questions, setQuestions] = useState<Question[]>([
-    { id: '1', type: 'text', text: 'Enter your first question...', required: true }
+    { id: '1', type: 'text', text: '', required: true }
   ]);
 
   const addQuestion = (type: QuestionType) => {
@@ -57,35 +61,95 @@ export default function CreateSurveyPage() {
     setQuestions(questions.map(q => q.id === id ? { ...q, ...updates } : q));
   };
 
+  const handleLaunch = async (surveyStatus: 'draft' | 'published') => {
+    if (!title) {
+      setErrorMessage('Please provide a title for your survey.');
+      setStatus('error');
+      return;
+    }
+
+    if (questions.some(q => !q.text)) {
+      setErrorMessage('Please ensure all questions have text.');
+      setStatus('error');
+      return;
+    }
+
+    setLoading(true);
+    setStatus('loading');
+
+    try {
+      const res = await createSurvey({
+        title,
+        description,
+        questions,
+        status: surveyStatus
+      });
+
+      if (res.error) {
+        setErrorMessage(typeof res.error === 'string' ? res.error : 'Failed to launch survey.');
+        setStatus('error');
+      } else {
+        setStatus('success');
+        setTimeout(() => {
+          router.push('/creator/surveys');
+        }, 1500);
+      }
+    } catch (err) {
+      setErrorMessage('An unexpected error occurred.');
+      setStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
+    <div className="max-w-4xl mx-auto space-y-8 pb-24">
+      <AnimatePresence>
+        {status === 'error' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-500 text-xs font-bold"
+          >
+            <AlertCircle size={16} />
+            {errorMessage}
+          </motion.div>
+        )}
+        {status === 'success' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-nova-green/10 border border-nova-green/20 p-4 rounded-2xl flex items-center gap-3 text-nova-green text-xs font-bold"
+          >
+            <CheckCircle2 size={16} />
+            Ecosystem entry verified. Redirecting...
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
          <div>
             <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Survey Architect</h1>
             <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Design ecosystem feedback instruments</p>
          </div>
-         <div className="flex gap-4">
-            <button className="px-6 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
+         <div className="flex gap-3">
+            <button
+              disabled={loading}
+              onClick={() => handleLaunch('draft')}
+              className="px-5 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
                <Save size={14} />
                Save Draft
             </button>
             <button
-              onClick={async () => {
-                if (!title || !description || questions.length === 0) return;
-                setLoading(true);
-                const { error } = await createSurvey({
-                  title,
-                  description,
-                  questions
-                });
-                setLoading(false);
-                if (!error) router.push('/creator/surveys');
-              }}
+              onClick={() => handleLaunch('published')}
               disabled={loading}
-              className="px-6 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
             >
-               <Rocket size={14} />
-               {loading ? 'Launching...' : 'Launch Survey'}
+               {loading ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
+               {loading ? 'Launching...' : 'Launch'}
             </button>
          </div>
       </header>
@@ -147,11 +211,32 @@ export default function CreateSurveyPage() {
                              <input
                                type="text"
                                value={option}
+                               onChange={(e) => {
+                                 const newOptions = [...(question.options || [])];
+                                 newOptions[i] = e.target.value;
+                                 updateQuestion(question.id, { options: newOptions });
+                               }}
+                               placeholder={`Option ${i + 1}`}
                                className="bg-transparent border-b border-white/5 focus:border-nova-cyan/30 text-xs py-1 focus:outline-none flex-1"
                              />
+                             <button
+                               onClick={() => {
+                                 const newOptions = question.options?.filter((_, idx) => idx !== i);
+                                 updateQuestion(question.id, { options: newOptions });
+                               }}
+                               className="text-white/20 hover:text-red-500"
+                             >
+                                <Trash2 size={12} />
+                             </button>
                           </div>
                         ))}
-                        <button className="text-[8px] font-black uppercase tracking-widest text-nova-cyan/60 hover:text-nova-cyan flex items-center gap-2 mt-4">
+                        <button
+                          onClick={() => {
+                            const newOptions = [...(question.options || []), `Option ${(question.options?.length || 0) + 1}`];
+                            updateQuestion(question.id, { options: newOptions });
+                          }}
+                          className="text-[8px] font-black uppercase tracking-widest text-nova-cyan/60 hover:text-nova-cyan flex items-center gap-2 mt-4"
+                        >
                            <Plus size={12} />
                            Add Option
                         </button>

@@ -128,36 +128,36 @@ export default function SurveysManagementPage() {
   }
 
   return (
-    <div className="space-y-10 pb-20">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 lg:space-y-10 pb-20">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
         <div>
-           <h1 className="text-3xl font-black uppercase tracking-tight mb-2">My Surveys</h1>
-           <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Intelligence assets and node metrics</p>
+           <h1 className="text-2xl lg:text-3xl font-black uppercase tracking-tight mb-1">My Surveys</h1>
+           <p className="text-white/40 text-[8px] lg:text-[10px] uppercase tracking-[0.4em]">Intelligence assets and node metrics</p>
         </div>
-        <Link href="/creator/surveys/new" className="px-6 py-3 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center gap-2">
+        <Link href="/creator/surveys/new" className="px-5 py-3.5 rounded-2xl bg-nova-purple text-white text-[9px] lg:text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
            <Plus size={14} />
-           Architect New Survey
+           New Survey
         </Link>
       </header>
 
       {/* Filters & Search */}
-      <section className="flex flex-col md:flex-row gap-4">
+      <section className="flex flex-col md:flex-row gap-3 lg:gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
           <input
             type="text"
-            placeholder="Search by title or category..."
+            placeholder="Search title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm focus:outline-none focus:border-nova-cyan/30 transition-all"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl py-3.5 lg:py-4 pl-11 pr-6 text-xs lg:text-sm focus:outline-none focus:border-nova-cyan/30 transition-all"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
           {statusOptions.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
-              className={`whitespace-nowrap px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+              className={`whitespace-nowrap px-5 py-3 lg:px-6 lg:py-4 rounded-xl lg:rounded-2xl text-[8px] lg:text-[9px] font-black uppercase tracking-widest transition-all border ${
                 statusFilter === opt.value
                   ? 'bg-nova-cyan/10 border-nova-cyan/30 text-nova-cyan'
                   : 'bg-white/[0.02] border-white/5 text-white/40 hover:bg-white/5'
