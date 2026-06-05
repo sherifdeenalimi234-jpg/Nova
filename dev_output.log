@@ -1,0 +1,38 @@
+
+> app@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1440ms (170 modules)
+[Middleware] Path: /creator, User: Guest
+[Middleware] Guest accessing protected route /creator, redirecting to /
+[Middleware] Path: /, User: Guest
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 11.9s (1582 modules)
+ GET / 200 in 13399ms
+[Middleware] Path: /creator/surveys, User: Guest
+[Middleware] Guest accessing protected route /creator/surveys, redirecting to /
+[Middleware] Path: /, User: Guest
+ GET / 200 in 96ms
+ ✓ Compiled in 1135ms (729 modules)
+ ✓ Compiled in 341ms (729 modules)
+ ✓ Compiled in 380ms (729 modules)
+ ✓ Compiled in 439ms (729 modules)
+ ✓ Compiled in 453ms (729 modules)
+ ✓ Compiled in 221ms (729 modules)
+ ✓ Compiled in 218ms (729 modules)
+ ✓ Compiled in 196ms (729 modules)
+ ✓ Compiled in 238ms (729 modules)
+ ✓ Compiled in 199ms (729 modules)
+ ✓ Compiled in 194ms (729 modules)
+ ✓ Compiled in 226ms (729 modules)
+ ✓ Compiled in 346ms (729 modules)
+ ✓ Compiled in 209ms (729 modules)
