@@ -23,7 +23,8 @@ export async function createSurvey(data: {
       description: data.description,
       category: data.category || 'General',
       status: data.status || 'draft',
-      settings: { anonymous: false, one_response_per_participant: true }
+      settings: { anonymous: false, one_response_per_participant: true },
+      questions: []
     })
     .select()
     .single();
@@ -52,8 +53,8 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
     `)
     .eq('id', surveyId)
     .eq('creator_id', user.id)
-    .order('order_index', { foreignTable: 'survey_questions', ascending: true })
-    .order('order_index', { foreignTable: 'survey_questions.survey_options', ascending: true })
+    .order('order_index', { referencedTable: 'survey_questions', ascending: true })
+    .order('order_index', { referencedTable: 'survey_questions.survey_options', ascending: true })
     .single();
 
   if (surveyError) return { error: surveyError };
@@ -297,7 +298,8 @@ export async function duplicateSurvey(surveyId: string) {
     .insert({
       ...surveyData,
       title: `${existingSurvey.title} (Copy)`,
-      status: 'draft'
+      status: 'draft',
+      questions: []
     })
     .select()
     .single();
