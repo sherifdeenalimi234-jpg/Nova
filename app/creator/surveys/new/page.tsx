@@ -38,38 +38,9 @@ export default function CreateSurveyPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [questions, setQuestions] = useState<Question[]>([
-    { id: '1', type: 'text', text: '', required: true }
-  ]);
-
-  const addQuestion = (type: QuestionType) => {
-    const newQuestion: Question = {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      text: '',
-      required: true,
-      options: type === 'multiple-choice' ? ['Option 1'] : undefined
-    };
-    setQuestions([...questions, newQuestion]);
-  };
-
-  const removeQuestion = (id: string) => {
-    setQuestions(questions.filter(q => q.id !== id));
-  };
-
-  const updateQuestion = (id: string, updates: Partial<Question>) => {
-    setQuestions(questions.map(q => q.id === id ? { ...q, ...updates } : q));
-  };
-
   const handleLaunch = async (surveyStatus: 'draft' | 'published') => {
     if (!title) {
       setErrorMessage('Please provide a title for your survey.');
-      setStatus('error');
-      return;
-    }
-
-    if (questions.some(q => !q.text)) {
-      setErrorMessage('Please ensure all questions have text.');
       setStatus('error');
       return;
     }
@@ -81,7 +52,6 @@ export default function CreateSurveyPage() {
       const res = await createSurvey({
         title,
         description,
-        questions,
         status: surveyStatus
       });
 
@@ -91,8 +61,8 @@ export default function CreateSurveyPage() {
       } else {
         setStatus('success');
         setTimeout(() => {
-          router.push('/creator/surveys');
-        }, 1500);
+          router.push(`/creator/surveys/${res.data.id}/builder`);
+        }, 1000);
       }
     } catch (err) {
       setErrorMessage('An unexpected error occurred.');
@@ -154,162 +124,39 @@ export default function CreateSurveyPage() {
          </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-        <div className="lg:col-span-3 space-y-8">
-           {/* Survey Info */}
-           <section className="p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl space-y-6">
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Survey Title"
-                className="w-full bg-transparent border-none text-2xl font-black uppercase tracking-tight focus:ring-0 placeholder:text-white/10"
-              />
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the purpose of this data collection..."
-                rows={2}
-                className="w-full bg-transparent border-none text-sm focus:ring-0 placeholder:text-white/10 resize-none"
-              />
-           </section>
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Survey Info */}
+        <section className="p-10 rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl space-y-8">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-nova-cyan ml-1">Initialization Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Neural Network Feedback"
+              className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-lg font-bold focus:border-nova-cyan/50 focus:ring-0 transition-all placeholder:text-white/10"
+            />
+          </div>
 
-           {/* Questions Builder */}
-           <div className="space-y-6">
-              {questions.map((question, index) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={question.id}
-                  className="p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group relative"
-                >
-                   <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-4">
-                         <span className="text-[10px] font-black text-white/20">#{index + 1}</span>
-                         <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-nova-cyan">
-                            {question.type}
-                         </div>
-                      </div>
-                      <button onClick={() => removeQuestion(question.id)} className="text-white/20 hover:text-red-500 transition-colors">
-                         <Trash2 size={16} />
-                      </button>
-                   </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Objective Overview</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the research goals for this survey..."
+              rows={4}
+              className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-sm focus:border-nova-cyan/50 focus:ring-0 transition-all placeholder:text-white/10 resize-none"
+            />
+          </div>
+        </section>
 
-                   <input
-                     type="text"
-                     value={question.text}
-                     onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
-                     placeholder="Enter question text..."
-                     className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:border-nova-cyan/30 mb-6"
-                   />
-
-                   {question.type === 'multiple-choice' && (
-                     <div className="space-y-3 mb-6">
-                        {question.options?.map((option, i) => (
-                          <div key={i} className="flex items-center gap-4">
-                             <Circle size={14} className="text-white/20" />
-                             <input
-                               type="text"
-                               value={option}
-                               onChange={(e) => {
-                                 const newOptions = [...(question.options || [])];
-                                 newOptions[i] = e.target.value;
-                                 updateQuestion(question.id, { options: newOptions });
-                               }}
-                               placeholder={`Option ${i + 1}`}
-                               className="bg-transparent border-b border-white/5 focus:border-nova-cyan/30 text-xs py-1 focus:outline-none flex-1"
-                             />
-                             <button
-                               onClick={() => {
-                                 const newOptions = question.options?.filter((_, idx) => idx !== i);
-                                 updateQuestion(question.id, { options: newOptions });
-                               }}
-                               className="text-white/20 hover:text-red-500"
-                             >
-                                <Trash2 size={12} />
-                             </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => {
-                            const newOptions = [...(question.options || []), `Option ${(question.options?.length || 0) + 1}`];
-                            updateQuestion(question.id, { options: newOptions });
-                          }}
-                          className="text-[8px] font-black uppercase tracking-widest text-nova-cyan/60 hover:text-nova-cyan flex items-center gap-2 mt-4"
-                        >
-                           <Plus size={12} />
-                           Add Option
-                        </button>
-                     </div>
-                   )}
-
-                   <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                      <div className="flex items-center gap-2">
-                         <div className="w-8 h-4 rounded-full bg-nova-cyan/20 p-0.5 flex justify-end">
-                            <div className="w-3 h-3 rounded-full bg-nova-cyan" />
-                         </div>
-                         <span className="text-[8px] font-black uppercase tracking-widest text-white/40">Required</span>
-                      </div>
-                   </div>
-                </motion.div>
-              ))}
-           </div>
-
-           {/* Add Question Controls */}
-           <section className="p-8 rounded-[2.5rem] border border-dashed border-white/10 bg-white/[0.01] flex flex-col items-center justify-center gap-8">
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/20">Integrate Component</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                 {[
-                   { type: 'text', icon: Type, label: 'Text' },
-                   { type: 'multiple-choice', icon: CheckSquare, label: 'Options' },
-                   { type: 'rating', icon: Star, label: 'Rating' },
-                   { type: 'file', icon: Upload, label: 'File' },
-                 ].map((tool) => (
-                   <button
-                     key={tool.type}
-                     onClick={() => addQuestion(tool.type as QuestionType)}
-                     className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 hover:bg-white/10 transition-all group"
-                   >
-                      <tool.icon size={16} className="text-white/40 group-hover:text-nova-cyan" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-white/60">{tool.label}</span>
-                   </button>
-                 ))}
-              </div>
-           </section>
-        </div>
-
-        {/* Sidebar Settings */}
-        <div className="space-y-6">
-           <section className="p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-8">
-                 <Settings size={16} className="text-nova-purple" />
-                 <h2 className="text-[10px] font-black uppercase tracking-widest text-white/40">Architectural Rules</h2>
-              </div>
-              <div className="space-y-6">
-                 <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-white/20 ml-1">Deadline</label>
-                    <input type="date" className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[10px] text-white/60" />
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Anonymous Mode</span>
-                    <div className="w-8 h-4 rounded-full bg-white/5 p-0.5">
-                       <div className="w-3 h-3 rounded-full bg-white/20" />
-                    </div>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Export Results</span>
-                    <div className="w-8 h-4 rounded-full bg-nova-cyan/20 p-0.5 flex justify-end">
-                       <div className="w-3 h-3 rounded-full bg-nova-cyan" />
-                    </div>
-                 </div>
-              </div>
-           </section>
-
-           <div className="p-8 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-nova-cyan/5 to-transparent">
-              <p className="text-[9px] text-white/40 leading-relaxed uppercase tracking-widest">
-                 Surveys are essential for gathering ecosystem intelligence. All responses are securely logged.
-              </p>
-           </div>
+        <div className="p-8 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-nova-purple/5 to-transparent flex items-center gap-6">
+          <div className="w-12 h-12 rounded-2xl bg-nova-purple/10 flex items-center justify-center text-nova-purple shrink-0">
+             <Settings size={24} />
+          </div>
+          <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-widest">
+            After initialization, you will be redirected to the <span className="text-white">Survey Architect</span> to build your logic nodes and questions.
+          </p>
         </div>
       </div>
     </div>

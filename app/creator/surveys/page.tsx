@@ -182,7 +182,7 @@ export default function SurveysManagementPage() {
                survey={survey}
                onStatusChange={handleStatusChange}
                onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
-               onEdit={(id) => router.push(`/creator/surveys/edit/${id}`)}
+               onEdit={(id) => router.push(`/creator/surveys/${id}/builder`)}
                onPreview={(id) => router.push(`/surveys/${id}`)}
                onDuplicate={handleDuplicate}
              />

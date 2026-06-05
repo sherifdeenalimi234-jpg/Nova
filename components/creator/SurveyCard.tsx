@@ -36,7 +36,7 @@ export default function SurveyCard({
   onDuplicate
 }: SurveyCardProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const responseCount = survey.survey_responses?.[0]?.count || 0;
+  const responseCount = (survey as any).response_count || 0;
 
   const statusConfig = {
     draft: { color: 'bg-nova-orange/10 text-nova-orange', label: 'Draft' },

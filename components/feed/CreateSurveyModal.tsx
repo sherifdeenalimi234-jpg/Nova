@@ -38,7 +38,7 @@ export default function CreateSurveyModal({ isOpen, onClose }: { isOpen: boolean
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await createSurvey({ title, description, questions });
+    const { error } = await createSurvey({ title, description });
     if (!error) {
       alert("Survey intelligence deployed.");
       onClose();
