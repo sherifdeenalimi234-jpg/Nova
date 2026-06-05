@@ -39,9 +39,10 @@ const MobileNav: React.FC<MobileNavProps> = ({ profile }) => {
 
   const bottomItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
-    { name: 'Posts', icon: FileText, href: '/creator/posts' },
-    { name: 'Discover', icon: Search, href: '/feed' },
+    { name: 'Surveys', icon: Search, href: '/creator/surveys' },
+    { name: 'Create', icon: PlusCircle, href: '/creator/surveys/new' },
     { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
+    { name: 'Portfolio', icon: User, href: `/u/${profile?.custom_url || profile?.id}` },
   ];
 
   const drawerVariants: Variants = {
@@ -171,20 +172,26 @@ const MobileNav: React.FC<MobileNavProps> = ({ profile }) => {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center gap-1.5 px-3 py-2 transition-all ${
+              className={`flex flex-col items-center gap-1 transition-all ${
                 isActive ? 'text-nova-cyan' : 'text-white/30 hover:text-white/60'
-              }`}
+              } ${item.name === 'Create' ? 'relative -mt-10' : ''}`}
             >
-              <div className={`relative ${isActive ? 'scale-110' : ''} transition-transform`}>
-                <item.icon size={20} />
-                {isActive && (
+              <div className={`relative transition-all flex flex-col items-center gap-1 ${isActive ? 'scale-110' : ''}`}>
+                {item.name === 'Create' ? (
+                  <div className="w-12 h-12 rounded-full bg-nova-purple flex items-center justify-center text-white shadow-[0_0_20px_rgba(112,0,255,0.4)] border-4 border-[#050505]">
+                    <PlusCircle size={24} />
+                  </div>
+                ) : (
+                  <item.icon size={18} />
+                )}
+                {isActive && item.name !== 'Create' && (
                   <motion.div
                     layoutId="activeTabMobile"
-                    className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-nova-cyan rounded-full shadow-[0_0_8px_#00f2ff]"
+                    className="absolute -top-1 -right-1 w-1 h-1 bg-nova-cyan rounded-full shadow-[0_0_8px_#00f2ff]"
                   />
                 )}
               </div>
-              <span className="text-[8px] font-black uppercase tracking-tighter">{item.name}</span>
+              <span className={`text-[7px] font-black uppercase tracking-tighter ${item.name === 'Create' ? 'mt-1' : ''}`}>{item.name}</span>
             </Link>
           );
         })}

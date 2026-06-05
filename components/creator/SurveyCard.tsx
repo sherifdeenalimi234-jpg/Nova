@@ -53,45 +53,45 @@ export default function SurveyCard({
   };
 
   return (
-    <div className="relative p-6 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-3">
-            <span className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${statusConfig[survey.status].color}`}>
+    <div className="relative p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
+        <div className="flex-1 space-y-2 lg:space-y-3">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <span className={`px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full text-[7px] lg:text-[8px] font-black uppercase tracking-widest ${statusConfig[survey.status].color}`}>
               {statusConfig[survey.status].label}
             </span>
-            <span className="text-[9px] font-black uppercase tracking-widest text-white/20 flex items-center gap-1">
-              <Calendar size={10} />
+            <span className="text-[8px] lg:text-[9px] font-black uppercase tracking-widest text-white/20 flex items-center gap-1">
+              <Calendar size={9} />
               {formatDate(survey.created_at)}
             </span>
             {survey.category && (
-              <span className="text-[9px] font-black uppercase tracking-widest text-nova-cyan/60">
+              <span className="text-[8px] lg:text-[9px] font-black uppercase tracking-widest text-nova-cyan/60">
                 {survey.category}
               </span>
             )}
           </div>
 
-          <h3 className="text-lg font-black group-hover:text-nova-cyan transition-colors line-clamp-1">
+          <h3 className="text-base lg:text-lg font-black group-hover:text-nova-cyan transition-colors line-clamp-1">
             {survey.title}
           </h3>
 
-          <div className="flex items-center gap-4 text-[10px] text-white/40">
-            <div className="flex items-center gap-1.5">
-              <Users size={12} className="text-nova-cyan" />
+          <div className="flex items-center gap-3 lg:gap-4 text-[9px] lg:text-[10px] text-white/40">
+            <div className="flex items-center gap-1">
+              <Users size={11} className="text-nova-cyan" />
               <span className="font-bold text-white">{responseCount}</span>
-              <span className="uppercase tracking-widest">Responses</span>
+              <span className="uppercase tracking-[0.1em]">Resp.</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock size={12} />
-              <span className="uppercase tracking-widest">Updated {formatDate(survey.updated_at)}</span>
+            <div className="flex items-center gap-1">
+              <Clock size={11} />
+              <span className="uppercase tracking-[0.1em]"> {formatDate(survey.updated_at)}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
           <button
             onClick={() => onPreview(survey.id)}
-            className="hidden sm:flex p-3 rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
+            className="hidden lg:flex p-3 rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
             title="Preview"
           >
             <Eye size={18} />
@@ -99,18 +99,18 @@ export default function SurveyCard({
 
           <button
             onClick={() => onEdit(survey.id)}
-            className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            className="flex-1 lg:flex-none px-5 py-3 rounded-xl lg:rounded-2xl bg-white/5 border border-white/5 text-[9px] lg:text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
-            <Edit3 size={14} />
+            <Edit3 size={13} />
             Edit
           </button>
 
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-3 rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
+              className="p-3 rounded-xl lg:rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
             >
-              <MoreVertical size={18} />
+              <MoreVertical size={16} />
             </button>
 
             <AnimatePresence>

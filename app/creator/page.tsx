@@ -75,96 +75,95 @@ export default function CreatorDashboard() {
   const skeletonClasses = "animate-pulse bg-white/5 rounded-2xl";
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 lg:space-y-10">
       {/* Creator Status Section - Mobile Only */}
       {!loading && profile ? (
-        <section className="lg:hidden p-6 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-nova-cyan/5 to-nova-purple/5 backdrop-blur-xl mb-6">
-           <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-2xl border border-white/10 overflow-hidden bg-white/5">
+        <section className="lg:hidden p-5 rounded-[2rem] border border-white/5 bg-gradient-to-br from-nova-cyan/5 to-nova-purple/5 backdrop-blur-xl">
+           <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl border border-white/10 overflow-hidden bg-white/5">
                     {profile.avatar_url ? (
                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                        <div className="w-full h-full flex items-center justify-center">
-                          <User size={20} className="text-white/20" />
+                          <User size={16} className="text-white/20" />
                        </div>
                     )}
                  </div>
                  <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest">{profile.full_name}</h2>
-                    <p className="text-[9px] text-nova-cyan font-black uppercase tracking-[0.2em]">{profile.professional_title || 'Innovation Architect'}</p>
+                    <h2 className="text-xs font-black uppercase tracking-widest">{profile.full_name}</h2>
+                    <p className="text-[8px] text-nova-cyan font-black uppercase tracking-[0.2em]">{profile.professional_title || 'Innovation Architect'}</p>
                  </div>
               </div>
               {profile.verification_status === 'approved' && (
-                 <div className="px-3 py-1 rounded-full bg-nova-cyan/20 border border-nova-cyan/30">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-nova-cyan">Verified</span>
+                 <div className="px-2 py-0.5 rounded-full bg-nova-cyan/20 border border-nova-cyan/30">
+                    <span className="text-[7px] font-black uppercase tracking-widest text-nova-cyan">Verified</span>
                  </div>
               )}
            </div>
 
-           <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                 <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Node Level</p>
-                 <p className="text-xs font-black">Level 1 Node</p>
+           <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                 <p className="text-[7px] font-black uppercase tracking-widest text-white/40 mb-0.5">Node Level</p>
+                 <p className="text-[10px] font-black">Level 1 Node</p>
               </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                 <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Status</p>
-                 <p className="text-xs font-black text-nova-green">ACTIVE</p>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                 <p className="text-[7px] font-black uppercase tracking-widest text-white/40 mb-0.5">Status</p>
+                 <p className="text-[10px] font-black text-nova-green uppercase">Active</p>
               </div>
            </div>
         </section>
       ) : loading && (
-        <div className="lg:hidden h-40 w-full animate-pulse bg-white/5 rounded-[2.5rem] mb-6" />
+        <div className="lg:hidden h-32 w-full animate-pulse bg-white/5 rounded-[2rem]" />
       )}
 
       {/* Welcome Section */}
-      <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-           <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Command Center</h1>
-           <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage your innovation ecosystem</p>
+           <h1 className="text-2xl lg:text-3xl font-black uppercase tracking-tight mb-1">Command Center</h1>
+           <p className="text-white/40 text-[8px] lg:text-[10px] uppercase tracking-[0.4em]">Manage innovation assets</p>
         </div>
-        <div className="flex gap-4">
-           <Link href="/creator/surveys/new" className="px-6 py-3 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center gap-2">
+        <div className="flex gap-3 lg:gap-4">
+           <Link href="/creator/surveys/new" className="flex-1 lg:flex-none px-6 py-3.5 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
               <Plus size={14} />
-              Create Survey
+              New Survey
            </Link>
         </div>
       </section>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Grid - Mobile Optimized */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {loading ? (
           [1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5" />
+            <div key={i} className="h-28 lg:h-32 rounded-[2rem] lg:rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5" />
           ))
         ) : (
           [
-            { label: 'Total Surveys', value: stats?.total || 0, icon: ClipboardList, color: 'text-nova-cyan', bg: 'bg-nova-cyan/10' },
-            { label: 'Active Surveys', value: stats?.active || 0, icon: CheckCircle2, color: 'text-nova-green', bg: 'bg-nova-green/10' },
-            { label: 'Draft Surveys', value: stats?.draft || 0, icon: FileEdit, color: 'text-nova-orange', bg: 'bg-nova-orange/10' },
-            { label: 'Total Responses', value: stats?.totalResponses || 0, icon: Users, color: 'text-nova-purple', bg: 'bg-nova-purple/10' },
+            { label: 'Surveys', value: stats?.total || 0, icon: ClipboardList, color: 'text-nova-cyan', bg: 'bg-nova-cyan/10' },
+            { label: 'Active', value: stats?.active || 0, icon: CheckCircle2, color: 'text-nova-green', bg: 'bg-nova-green/10' },
+            { label: 'Drafts', value: stats?.draft || 0, icon: FileEdit, color: 'text-nova-orange', bg: 'bg-nova-orange/10' },
+            { label: 'Responses', value: stats?.totalResponses || 0, icon: Users, color: 'text-nova-purple', bg: 'bg-nova-purple/10' },
           ].map((stat, i) => (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.05 }}
               key={stat.label}
-              className="p-6 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all"
+              className="p-4 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all"
             >
-               <div className="flex items-center justify-between mb-4">
-                  <div className={`w-10 h-10 rounded-2xl ${stat.bg} flex items-center justify-center border border-white/5`}>
-                     <stat.icon size={18} className={stat.color} />
+               <div className="flex items-center justify-between mb-3 lg:mb-4">
+                  <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-xl lg:rounded-2xl ${stat.bg} flex items-center justify-center border border-white/5`}>
+                     <stat.icon size={16} className={stat.color} />
                   </div>
-                  <ArrowUpRight size={14} className="text-white/20 group-hover:text-white transition-colors" />
                </div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{stat.label}</p>
-               <h3 className="text-2xl font-black">{stat.value}</h3>
+               <p className="text-[8px] lg:text-[10px] font-black uppercase tracking-widest text-white/40 mb-0.5">{stat.label}</p>
+               <h3 className="text-xl lg:text-2xl font-black">{stat.value}</h3>
             </motion.div>
           ))
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Analytics Preview */}
         <section className="lg:col-span-2 p-8 rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl">
            <div className="flex items-center justify-between mb-8">
