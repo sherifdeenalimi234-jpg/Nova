@@ -31,7 +31,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ profile }) => {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/creator' },
     { name: 'Posts', icon: FileText, href: '/creator/posts' },
-    { name: 'Surveys', icon: Search, href: '/creator/surveys' },
+    { name: 'Surveys', icon: Search, href: '/survey/dashboard' },
     { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
     { name: 'Portfolio', icon: User, href: `/u/${profile?.custom_url || profile?.id}` },
     { name: 'Settings', icon: Settings, href: '/creator/settings' },

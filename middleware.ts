@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
     '/feed',
     '/admin',
     '/creator',
-    '/surveys',
+    '/survey',
     '/gallery',
     '/analytics',
     '/notifications',
@@ -132,8 +132,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 4. Creator-only route protection (Includes Creator Studio and Project Hub)
-  if (pathname.startsWith('/creator') || pathname === '/projects' || pathname.startsWith('/projects/create')) {
+  // 4. Creator-only route protection (Includes Creator Studio, Project Hub, and Survey Management)
+  const isCreatorRoute = pathname.startsWith('/creator') ||
+                        pathname === '/projects' ||
+                        pathname.startsWith('/projects/create') ||
+                        pathname.startsWith('/survey/dashboard') ||
+                        pathname.startsWith('/survey/manage') ||
+                        pathname.startsWith('/survey/create');
+
+  if (isCreatorRoute) {
     if (user) {
       const is_creator = await isVerifiedCreator();
       const is_admin = await isAdminUser();
