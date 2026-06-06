@@ -11,6 +11,17 @@ export interface Survey {
   creator_id: string;
   title: string;
   description: string | null;
+  research_objective?: string | null;
+  project_id?: string | null;
+  survey_mode?: string | null;
+  target_audience?: string | null;
+  target_responses?: string | null;
+  visibility?: 'Private' | 'Public' | 'Invite Only';
+  estimated_duration?: string | null;
+  research_category?: string | null;
+  language?: string | null;
+  research_timeline?: string | null;
+  research_notes?: string | null;
   category: string | null;
   status: SurveyStatus;
   cover_image: string | null;
