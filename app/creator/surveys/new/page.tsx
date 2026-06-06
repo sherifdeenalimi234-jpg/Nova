@@ -101,8 +101,8 @@ export default function CreateSurveyPage() {
 
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Survey Architect</h1>
-            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Design ecosystem feedback instruments</p>
+            <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Initialize New Survey</h1>
+            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Establish research node parameters</p>
          </div>
          <div className="flex gap-3">
             <button
@@ -147,7 +147,7 @@ export default function CreateSurveyPage() {
              <Settings size={24} />
           </div>
           <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-widest">
-            After initialization, you will be redirected to the <span className="text-white">Survey Architect</span> to build your logic nodes and questions.
+            After initialization, you will be redirected to the <span className="text-white">Survey Workspace</span> to build your logic nodes and questions.
           </p>
         </div>
       </div>

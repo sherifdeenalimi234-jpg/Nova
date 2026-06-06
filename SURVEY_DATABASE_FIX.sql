@@ -37,6 +37,20 @@ DROP POLICY IF EXISTS "Users can view own survey responses" ON public.survey_res
 CREATE POLICY "Users can view own survey responses" ON public.survey_responses
     FOR SELECT USING (auth.uid() = participant_id);
 
+DROP POLICY IF EXISTS "Users can insert own survey responses" ON public.survey_responses;
+CREATE POLICY "Users can insert own survey responses" ON public.survey_responses
+    FOR INSERT WITH CHECK (auth.uid() = participant_id);
+
+DROP POLICY IF EXISTS "Creators can view responses to their surveys" ON public.survey_responses;
+CREATE POLICY "Creators can view responses to their surveys" ON public.survey_responses
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.surveys
+      WHERE surveys.id = survey_responses.survey_id
+      AND surveys.creator_id = auth.uid()
+    )
+  );
+
 -- 4. Storage Buckets (Ensure existence)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('surveys', 'surveys', true)
