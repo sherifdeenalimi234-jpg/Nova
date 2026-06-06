@@ -2,13 +2,19 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Survey, SurveyStats, SurveyQuestion, SurveyOption } from '@/lib/types/surveys';
+import { Survey, SurveyStats, SurveyQuestion, SurveyOption, SurveySettings } from '@/lib/types/surveys';
 
 export async function createSurvey(data: {
   title: string;
   description: string;
+  project_id?: string | null;
   category?: string;
   status?: 'draft' | 'published' | 'closed';
+  visibility?: 'Private' | 'Organization' | 'Public';
+  target_audience?: string[];
+  target_responses?: number;
+  estimated_time?: number;
+  settings?: Partial<SurveySettings>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,16 +25,34 @@ export async function createSurvey(data: {
     .from('surveys')
     .insert({
       creator_id: user.id,
+      project_id: data.project_id || null,
       title: data.title,
       description: data.description,
       category: data.category || 'General',
       status: data.status || 'draft',
-      settings: { anonymous: false, one_response_per_participant: true }
+      visibility: data.visibility || 'Private',
+      target_audience: data.target_audience || [],
+      target_responses: data.target_responses || 100,
+      estimated_time: data.estimated_time || 5,
+      settings: {
+        anonymous: true,
+        one_response_per_participant: true,
+        collect_identity: false,
+        auto_close: false,
+        response_limit: 0,
+        allow_multiple_submissions: false,
+        language: 'en',
+        timezone: 'UTC',
+        ...data.settings
+      }
     })
     .select()
     .single();
 
-  if (error) return { error };
+  if (error) {
+    console.error('[createSurvey] Error:', error);
+    return { error };
+  }
 
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');

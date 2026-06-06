@@ -5,59 +5,70 @@
    ▲ Next.js 15.5.18
    - Local:        http://localhost:3000
    - Network:      http://192.168.0.2:3000
+   - Environments: .env.local
 
  ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
  ✓ Ready in 2.2s
  ○ Compiling /middleware ...
- ✓ Compiled /middleware in 1440ms (170 modules)
-[Middleware] Path: /creator, User: Guest
-[Middleware] Guest accessing protected route /creator, redirecting to /
+ ✓ Compiled /middleware in 2.4s (170 modules)
+[Middleware] Path: /creator/surveys/new, User: Guest
+[Middleware] Guest accessing protected route /creator/surveys/new, redirecting to /
 [Middleware] Path: /, User: Guest
  ○ Compiling / ...
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
- ✓ Compiled / in 11.9s (1582 modules)
- GET / 200 in 13399ms
-[Middleware] Path: /creator/surveys, User: Guest
-[Middleware] Guest accessing protected route /creator/surveys, redirecting to /
-[Middleware] Path: /, User: Guest
- GET / 200 in 96ms
- ✓ Compiled in 1135ms (729 modules)
- ✓ Compiled in 341ms (729 modules)
- ✓ Compiled in 380ms (729 modules)
- ✓ Compiled in 439ms (729 modules)
- ✓ Compiled in 453ms (729 modules)
- ✓ Compiled in 221ms (729 modules)
- ✓ Compiled in 218ms (729 modules)
- ✓ Compiled in 196ms (729 modules)
- ✓ Compiled in 238ms (729 modules)
- ✓ Compiled in 199ms (729 modules)
- ✓ Compiled in 194ms (729 modules)
- ✓ Compiled in 226ms (729 modules)
- ✓ Compiled in 346ms (729 modules)
- ✓ Compiled in 209ms (729 modules)
- ✓ Compiled in 4.3s (729 modules)
- ✓ Compiled in 381ms (729 modules)
- ✓ Compiled in 253ms (729 modules)
- ✓ Compiled in 241ms (729 modules)
- ✓ Compiled in 307ms (729 modules)
- ✓ Compiled in 384ms (729 modules)
- ✓ Compiled in 235ms (729 modules)
-[Middleware] Path: /creator, User: Guest
-[Middleware] Guest accessing protected route /creator, redirecting to /
-[Middleware] Path: /, User: Guest
- ○ Compiling /_not-found ...
- ✓ Compiled /_not-found in 3.1s (1573 modules)
- GET / 404 in 3891ms
-[Middleware] Path: /creator/surveys, User: Guest
-[Middleware] Guest accessing protected route /creator/surveys, redirecting to /
-[Middleware] Path: /, User: Guest
- GET / 200 in 460ms
+ ✓ Compiled / in 14.7s (1582 modules)
+ GET / 200 in 16639ms
+ ✓ Compiled in 878ms (899 modules)
 [Middleware] Path: /creator/surveys/new, User: Guest
-[Middleware] Guest accessing protected route /creator/surveys/new, redirecting to /
+ ○ Compiling /creator/surveys/new ...
+ ✓ Compiled /creator/surveys/new in 3.2s (1858 modules)
 [Middleware] Path: /, User: Guest
- GET / 200 in 107ms
- ✓ Compiled in 6.4s (729 modules)
- ✓ Compiled in 2.3s (729 modules)
-[Middleware] Path: /test-builder, User: Guest
- ○ Compiling /test-builder ...
+ GET /creator/surveys/new?skip_auth=1 307 in 4118ms
+ GET / 200 in 259ms
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+[Middleware] Path: /creator/surveys/new, User: Guest
+[Middleware] Path: /, User: Guest
+ GET /creator/surveys/new?skip_auth=1 307 in 223ms
+ GET / 200 in 113ms
+ ✓ Compiled in 1151ms (926 modules)
+[Middleware] Path: /creator/surveys/new, User: Guest
+[Middleware] Path: /, User: Guest
+ GET /creator/surveys/new?skip_auth=1 307 in 296ms
+ GET / 200 in 163ms
+[Middleware] Path: /creator/surveys/new, User: Guest
+[Middleware] Path: /, User: Guest
+ GET /creator/surveys/new?skip_auth=1 307 in 190ms
+ GET / 200 in 128ms
+ ✓ Compiled in 1052ms (1609 modules)
+[Middleware] Path: /creator/surveys/new, User: Guest
+ ✓ Compiled /creator/surveys/new in 393ms (1116 modules)
+ ⨯ TypeError: Cannot read properties of null (reading 'id')
+    at CreatorLayout (app/creator/layout.tsx:40:20)
+  38 |     .from('profiles')
+  39 |     .select('*, creator_profiles(*)')
+> 40 |     .eq('id', user.id)
+     |                    ^
+  41 |     .single();
+  42 |
+  43 |   const menuItems = [ {
+  digest: '1626048639'
+}
+ GET /creator/surveys/new?skip_auth=1 500 in 1371ms
+ ✓ Compiled in 834ms (1872 modules)
+[Middleware] Path: /creator/surveys/new, User: Guest
+ GET /creator/surveys/new?skip_auth=1 200 in 791ms
+[Middleware] Path: /creator/surveys/new, User: Guest
+ POST /creator/surveys/new?skip_auth=1 200 in 258ms
+[Middleware] Path: /creator/surveys/new, User: Guest
+ GET /creator/surveys/new?skip_auth=1 200 in 348ms
+[Middleware] Path: /creator/surveys/new, User: Guest
+ POST /creator/surveys/new?skip_auth=1 200 in 50ms
+ ✓ Compiled in 2.2s (2042 modules)
+ ✓ Compiled in 5.6s (1872 modules)

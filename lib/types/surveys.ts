@@ -4,15 +4,25 @@ export type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multi
 export interface SurveySettings {
   anonymous: boolean;
   one_response_per_participant: boolean;
+  collect_identity?: boolean;
+  auto_close?: boolean;
+  response_limit?: number;
+  allow_multiple_submissions?: boolean;
+  language?: string;
+  timezone?: string;
 }
 
 export interface Survey {
   id: string;
   creator_id: string;
+  project_id: string | null;
   title: string;
   description: string | null;
   category: string | null;
   status: SurveyStatus;
+  visibility: 'Private' | 'Organization' | 'Public';
+  target_audience: string[];
+  target_responses: number;
   cover_image: string | null;
   estimated_time: number;
   tags: string[];
