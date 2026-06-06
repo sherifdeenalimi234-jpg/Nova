@@ -151,9 +151,9 @@ export default function QuestionList({ surveyId, initialQuestions }: QuestionLis
           <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <MessageSquare className="w-8 h-8 text-zinc-700" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-300 mb-2">No questions yet</h2>
+          <h2 className="text-xl font-bold text-zinc-300 mb-2">Create your first question.</h2>
           <p className="text-zinc-500 mb-8 max-w-xs mx-auto">
-            Click the button below to add your first question and start building your survey.
+            Click the button below to add your first logic node and start building your survey.
           </p>
           <button
             onClick={addQuestion}

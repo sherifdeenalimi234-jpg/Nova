@@ -50,6 +50,17 @@ export default function SurveyPreview({ survey }: SurveyPreviewProps) {
 
         {/* Dynamic Content */}
         <div className="h-full overflow-y-auto px-6 py-8 pb-32">
+          {questions.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 px-4">
+              <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center">
+                <Info className="w-8 h-8 text-zinc-700" />
+              </div>
+              <h3 className="text-lg font-bold text-zinc-400">No questions available yet.</h3>
+              <p className="text-xs text-zinc-600 leading-relaxed">
+                Add questions in the Questions tab to see them in this preview.
+              </p>
+            </div>
+          ) : (
           <AnimatePresence mode="wait">
             {currentStep === -1 && (
               <motion.div
@@ -150,6 +161,7 @@ export default function SurveyPreview({ survey }: SurveyPreviewProps) {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -172,10 +184,11 @@ export default function SurveyPreview({ survey }: SurveyPreviewProps) {
                 </button>
               )}
               <button
+                disabled={questions.length === 0}
                 onClick={handleNext}
-                className="flex-1 py-4 bg-cyan-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2"
+                className="flex-1 py-4 bg-cyan-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
               >
-                {currentStep === questions.length - 1 ? 'Finish' : 'Next'}
+                {questions.length === 0 ? 'Empty' : currentStep === questions.length - 1 ? 'Finish' : 'Next'}
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>

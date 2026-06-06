@@ -23,8 +23,7 @@ export async function createSurvey(data: {
       description: data.description,
       category: data.category || 'General',
       status: data.status || 'draft',
-      settings: { anonymous: false, one_response_per_participant: true },
-      questions: []
+      settings: { anonymous: false, one_response_per_participant: true }
     })
     .select()
     .single();
@@ -42,10 +41,22 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
 
   if (!user) return { error: "Authentication required." };
 
+  // Explicitly list columns to avoid legacy 'questions' column collision
   const { data: survey, error: surveyError } = await supabase
     .from('surveys')
     .select(`
-      *,
+      id,
+      creator_id,
+      title,
+      description,
+      status,
+      category,
+      cover_image,
+      estimated_time,
+      tags,
+      settings,
+      created_at,
+      updated_at,
       questions:survey_questions(
         *,
         options:survey_options(*)
