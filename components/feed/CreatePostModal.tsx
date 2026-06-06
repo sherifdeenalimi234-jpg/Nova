@@ -72,7 +72,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               type="button"
               onClick={() => {
                 onClose();
-                setIsSurveyModalOpen(true);
+                window.location.href = '/surveys/blueprint';
               }}
               className="flex items-center gap-2 px-3 py-1 rounded-full bg-nova-purple/10 border border-nova-purple/20 text-[8px] font-black uppercase tracking-widest text-nova-purple hover:bg-nova-purple/20 transition-all"
             >
