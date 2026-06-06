@@ -124,7 +124,7 @@ export default function CreatorDashboard() {
            <p className="text-white/40 text-[8px] lg:text-[10px] uppercase tracking-[0.4em]">Manage innovation assets</p>
         </div>
         <div className="flex gap-3 lg:gap-4">
-           <Link href="/creator/surveys/new" className="flex-1 lg:flex-none px-6 py-3.5 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
+           <Link href="/surveys/blueprint" className="flex-1 lg:flex-none px-6 py-3.5 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
               <Plus size={14} />
               New Survey
            </Link>
