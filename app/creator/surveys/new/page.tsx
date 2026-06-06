@@ -38,7 +38,7 @@ export default function CreateSurveyPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLaunch = async (surveyStatus: 'draft' | 'published') => {
+  const handleCreate = async () => {
     if (!title) {
       setErrorMessage('Please provide a title for your survey.');
       setStatus('error');
@@ -52,11 +52,11 @@ export default function CreateSurveyPage() {
       const res = await createSurvey({
         title,
         description,
-        status: surveyStatus
+        status: 'draft'
       });
 
       if (res.error) {
-        setErrorMessage(typeof res.error === 'string' ? res.error : 'Failed to launch survey.');
+        setErrorMessage(typeof res.error === 'string' ? res.error : 'Failed to create survey.');
         setStatus('error');
       } else {
         setStatus('success');
@@ -106,20 +106,12 @@ export default function CreateSurveyPage() {
          </div>
          <div className="flex gap-3">
             <button
+              onClick={handleCreate}
               disabled={loading}
-              onClick={() => handleLaunch('draft')}
-              className="px-5 py-3 rounded-2xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-8 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
             >
-               <Save size={14} />
-               Save Draft
-            </button>
-            <button
-              onClick={() => handleLaunch('published')}
-              disabled={loading}
-              className="px-5 py-3 rounded-2xl bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-               {loading ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
-               {loading ? 'Launching...' : 'Launch'}
+               {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+               {loading ? 'Initializing...' : 'Create Survey'}
             </button>
          </div>
       </header>

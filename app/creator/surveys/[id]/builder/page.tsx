@@ -8,7 +8,7 @@ export default async function BuilderPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const { data: survey, error } = await getSurveyForBuilder(id);
 
-  if (error || !survey) {
+  if (!survey) {
     notFound();
   }
 
