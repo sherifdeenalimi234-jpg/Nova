@@ -40,22 +40,41 @@ export async function createSurveyWorkspace(data: {
   title: string;
   research_objective: string;
   project_id: string | null;
+  survey_mode: string;
   target_audience: string;
   target_responses: string;
-  estimated_duration: string;
   visibility: string;
+  // Optional fields
+  estimated_duration?: string;
+  research_category?: string;
+  tags?: string[];
+  language?: string;
+  research_timeline?: string;
+  research_notes?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: "Authentication required." };
 
-  // 1. Validate
-  if (!data.title || !data.research_objective) {
-    return { success: false, error: "Validation failed: Title and Objective are required." };
+  // 1. Validate Required Fields
+  const requiredFields = [
+    'title',
+    'research_objective',
+    'project_id',
+    'survey_mode',
+    'target_audience',
+    'target_responses',
+    'visibility'
+  ];
+
+  for (const field of requiredFields) {
+    if (!data[field as keyof typeof data]) {
+      return { success: false, error: `Validation failed: ${field} is required.` };
+    }
   }
 
-  // 2. Create Survey Record (Workspace Engine)
+  // 2. Create Survey Record (Survey Blueprint System V1)
   const { data: survey, error } = await supabase
     .from('surveys')
     .insert({
@@ -63,10 +82,16 @@ export async function createSurveyWorkspace(data: {
       title: data.title,
       research_objective: data.research_objective,
       project_id: data.project_id,
+      survey_mode: data.survey_mode,
       target_audience: data.target_audience,
       target_responses: data.target_responses,
-      estimated_duration: data.estimated_duration,
       visibility: data.visibility,
+      estimated_duration: data.estimated_duration,
+      research_category: data.research_category,
+      tags: data.tags || [],
+      language: data.language || 'English',
+      research_timeline: data.research_timeline,
+      research_notes: data.research_notes,
       status: 'draft',
       questions: [] // Legacy column compatibility
     })
@@ -78,16 +103,17 @@ export async function createSurveyWorkspace(data: {
     return { success: false, error: error.message };
   }
 
-  // 3. Optional: Activity Feed
+  // 3. Activity Feed (Audit Requirement)
   await supabase.from('activity_feed').insert({
     user_id: user.id,
-    action: 'INITIALIZED WORKSPACE',
+    action: 'INITIALIZED BLUEPRINT WORKSPACE',
     entity_id: survey.id,
     entity_type: 'survey'
   });
 
   revalidatePath('/surveys');
   revalidatePath('/creator/surveys');
+  revalidatePath('/surveys/blueprint');
 
   return { success: true, id: survey.id };
 }
