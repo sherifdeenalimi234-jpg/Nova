@@ -82,10 +82,10 @@ export default async function SurveyDashboard({ params }: DashboardProps) {
                  <div className="w-16 h-16 rounded-full bg-nova-purple/10 flex items-center justify-center mb-8">
                     <Plus size={32} className="text-nova-purple" />
                  </div>
-                 <h2 className="text-xl font-bold uppercase tracking-widest mb-4 text-white">Initialize Question Nodes</h2>
-                 <p className="text-white/40 text-sm max-w-xs leading-relaxed mb-10">Your blueprint is ready. Begin architecting your research inquiry nodes.</p>
+                 <h2 className="text-xl font-bold uppercase tracking-widest mb-4 text-white">Initialize Survey Questions</h2>
+                 <p className="text-white/40 text-sm max-w-xs leading-relaxed mb-10">Your blueprint is ready. Begin building your research survey questions.</p>
                  <button className="px-10 py-4 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-[0.3em] hover:shadow-[0_10px_40px_rgba(188,19,254,0.3)] transition-all">
-                    Launch Architect
+                    Build Questions
                  </button>
               </div>
            </main>

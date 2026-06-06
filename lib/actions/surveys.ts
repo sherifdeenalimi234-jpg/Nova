@@ -23,7 +23,8 @@ export async function createSurvey(data: {
       description: data.description,
       category: data.category || 'General',
       status: data.status || 'draft',
-      settings: { anonymous: false, one_response_per_participant: true }
+      settings: { anonymous: false, one_response_per_participant: true },
+      questions: [] // Ensure questions is initialized
     })
     .select()
     .single();
@@ -33,6 +34,62 @@ export async function createSurvey(data: {
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
   return { data: survey };
+}
+
+export async function createSurveyWorkspace(data: {
+  title: string;
+  research_objective: string;
+  project_id: string | null;
+  target_audience: string;
+  target_responses: string;
+  estimated_duration: string;
+  visibility: string;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Authentication required." };
+
+  // 1. Validate
+  if (!data.title || !data.research_objective) {
+    return { success: false, error: "Validation failed: Title and Objective are required." };
+  }
+
+  // 2. Create Survey Record (Workspace Engine)
+  const { data: survey, error } = await supabase
+    .from('surveys')
+    .insert({
+      creator_id: user.id,
+      title: data.title,
+      research_objective: data.research_objective,
+      project_id: data.project_id,
+      target_audience: data.target_audience,
+      target_responses: data.target_responses,
+      estimated_duration: data.estimated_duration,
+      visibility: data.visibility,
+      status: 'draft',
+      questions: [] // Legacy column compatibility
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error("[createSurveyWorkspace] Error:", error);
+    return { success: false, error: error.message };
+  }
+
+  // 3. Optional: Activity Feed
+  await supabase.from('activity_feed').insert({
+    user_id: user.id,
+    action: 'INITIALIZED WORKSPACE',
+    entity_id: survey.id,
+    entity_type: 'survey'
+  });
+
+  revalidatePath('/surveys');
+  revalidatePath('/creator/surveys');
+
+  return { success: true, id: survey.id };
 }
 
 export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Survey, error?: any }> {
