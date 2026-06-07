@@ -11,7 +11,7 @@ interface SurveySettingsPanelProps {
 }
 
 export default function SurveySettingsPanel({ survey, onUpdate }: SurveySettingsPanelProps) {
-  const [settings, setSettings] = useState<SurveySettings>(survey.settings);
+  const [settings, setSettings] = useState<SurveySettings>(survey.settings || { anonymous: false, one_response_per_participant: true });
   const [isSaving, setIsSaving] = useState(false);
 
   const toggleSetting = (key: keyof SurveySettings) => {

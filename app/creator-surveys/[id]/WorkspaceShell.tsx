@@ -141,18 +141,18 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                  <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-lg font-black uppercase tracking-tight truncate">{survey.title}</h1>
                     <div className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${
-                      survey.status === 'published' ? 'bg-nova-green/20 text-nova-green' : 'bg-nova-cyan/20 text-nova-cyan'
+                      survey?.status === 'published' ? 'bg-nova-green/20 text-nova-green' : 'bg-nova-cyan/20 text-nova-cyan'
                     }`}>
-                       {survey.status}
+                       {survey?.status || 'DRAFT'}
                     </div>
                  </div>
                  <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-white/20">
                        <VisibilityIcon size={12} />
-                       <span className="text-[9px] font-bold uppercase tracking-widest">{survey.visibility}</span>
+                       <span className="text-[9px] font-bold uppercase tracking-widest">{survey?.visibility || 'Private'}</span>
                     </div>
                     <div className="h-3 w-px bg-white/10 hidden sm:block" />
-                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest hidden sm:block truncate max-w-[200px]">Project ID: {survey.project_id || 'Global'}</span>
+                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest hidden sm:block truncate max-w-[200px]">Project ID: {survey?.project_id || 'Global'}</span>
                  </div>
               </div>
            </div>
