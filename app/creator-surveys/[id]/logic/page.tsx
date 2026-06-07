@@ -3,7 +3,7 @@ import { GitBranch, Settings2, Share2 } from 'lucide-react';
 
 export default function LogicPlaceholder() {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <div className="w-24 h-24 rounded-[2.5rem] bg-nova-purple/10 border border-nova-purple/20 flex items-center justify-center text-nova-purple group">
          <GitBranch size={40} className="group-hover:rotate-90 transition-transform duration-500" />
       </div>

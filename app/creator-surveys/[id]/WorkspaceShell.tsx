@@ -33,10 +33,10 @@ interface WorkspaceShellProps {
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '' },
-  { id: 'build', label: 'Build', icon: Edit3, path: '/architect' },
-  { id: 'logic', label: 'Logic', icon: GitBranch, path: '/logic' },
-  { id: 'collect', label: 'Collect', icon: Send, path: '/collect' },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+  { id: 'architect', label: 'Architect', icon: Edit3, path: '/architect' },
+  { id: 'logic', label: 'Logic Engine', icon: GitBranch, path: '/logic' },
+  { id: 'collect', label: 'Collection Hub', icon: Send, path: '/collect' },
+  { id: 'analytics', label: 'Analytics Center', icon: BarChart3, path: '/analytics' },
   { id: 'ai-lab', label: 'AI Lab', icon: Sparkles, path: '/ai-lab' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
@@ -86,10 +86,10 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
         <div className="p-8">
            <button
              onClick={() => router.push('/creator-surveys')}
-             className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group"
+             className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group py-2"
            >
               <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Back to Hub</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Exit Workspace</span>
            </button>
 
            <nav className="space-y-1">
@@ -202,19 +202,19 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
         </footer>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around px-4 z-[60] safe-area-bottom">
-           {navItems.filter(i => ['overview', 'build', 'collect', 'analytics'].includes(i.id)).map((item) => {
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around px-2 z-[60] safe-area-bottom">
+           {navItems.filter(i => ['overview', 'architect', 'collect', 'analytics'].includes(i.id)).map((item) => {
              const isActive = activeTab === item.id;
              return (
                <Link
                  key={item.id}
                  href={`/creator-surveys/${survey.id}${item.path}`}
-                 className={`flex flex-col items-center gap-1.5 transition-all ${
+                 className={`flex flex-col items-center justify-center gap-1.5 transition-all min-w-[64px] h-full ${
                    isActive ? 'text-nova-purple' : 'text-white/30'
                  }`}
                >
-                 <item.icon size={20} />
-                 <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+                 <item.icon size={22} />
+                 <span className="text-[7px] font-black uppercase tracking-widest text-center">{item.label.split(' ')[0]}</span>
                </Link>
              );
            })}

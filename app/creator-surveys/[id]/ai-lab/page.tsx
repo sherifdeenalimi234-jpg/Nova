@@ -3,7 +3,7 @@ import { Sparkles, Brain, Cpu, MessageSquare, Search } from 'lucide-react';
 
 export default function AILabPlaceholder() {
   return (
-    <div className="space-y-12 animate-in fade-in duration-700">
+    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
       <header className="text-center space-y-4 max-w-2xl mx-auto">
          <div className="w-16 h-16 rounded-2xl bg-nova-purple/20 border border-nova-purple/30 flex items-center justify-center text-nova-purple mx-auto animate-pulse">
             <Sparkles size={32} />

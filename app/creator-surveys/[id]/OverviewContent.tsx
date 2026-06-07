@@ -60,7 +60,7 @@ export default function OverviewContent({ survey }: { survey: Survey }) {
            <div>
               <h3 className="text-xs font-black uppercase tracking-widest text-white/40 mb-4">Collection Progress</h3>
               <div className="text-3xl font-black">0%</div>
-              <p className="text-[10px] text-white/20 uppercase tracking-widest">0 of {survey.target_responses || 0} Responses</p>
+              <p className="text-[10px] text-white/20 uppercase tracking-widest">0 of {survey?.target_responses || 0} Responses</p>
            </div>
            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-6">
               <div className="h-full bg-nova-cyan w-0" />

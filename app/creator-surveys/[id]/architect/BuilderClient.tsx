@@ -26,11 +26,11 @@ interface BuilderClientProps {
   initialSurvey: Survey;
 }
 
-type Tab = 'info' | 'questions' | 'settings' | 'preview';
+type Tab = 'questions' | 'preview';
 
 export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
   const [survey, setSurvey] = useState<Survey>(initialSurvey);
-  const [activeTab, setActiveTab] = useState<Tab>('info');
+  const [activeTab, setActiveTab] = useState<Tab>('questions');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const [isSaving, setIsSaving] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
@@ -52,69 +52,38 @@ export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
   };
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
-    { id: 'info', label: 'Info', icon: Layout },
-    { id: 'questions', label: 'Questions', icon: MessageSquare },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'questions', label: 'Architect', icon: MessageSquare },
     { id: 'preview', label: 'Preview', icon: Eye },
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
-      {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-zinc-800 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/creator-surveys"
-              className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-lg font-bold truncate max-w-[200px] md:max-w-md">
-                {survey.title || 'Untitled Survey'}
-              </h1>
-              <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${survey.status === 'published' ? 'bg-green-500' : 'bg-zinc-500'}`} />
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                  {survey.status} • Last saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          </div>
+    <div className="bg-transparent text-white pb-24">
+      {/* Header with quick actions */}
+      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Question Architect</h2>
+           <p className="text-white/40 text-[10px] uppercase tracking-[0.4em] font-medium">Design and calibrate intelligence nodes</p>
+        </div>
 
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5">
+                <span className={`w-1.5 h-1.5 rounded-full ${survey.status === 'published' ? 'bg-nova-green animate-pulse' : 'bg-nova-cyan'}`} />
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">
+                  {survey.status} • Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+            </div>
             <button
               onClick={() => setShowValidation(true)}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-sm transition-all border border-zinc-800"
+              className="flex items-center gap-2 px-6 h-12 bg-nova-purple text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg shadow-nova-purple/20 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-              Validate
+              Publish Node
             </button>
-            <button
-              onClick={() => setShowValidation(true)}
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl text-sm transition-all shadow-lg shadow-cyan-500/20"
-            >
-              Publish
-            </button>
-          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto">
         <AnimatePresence mode="wait">
-          {activeTab === 'info' && (
-            <motion.div
-              key="info"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <SurveyInfo survey={survey} onUpdate={handleUpdate} />
-            </motion.div>
-          )}
-
           {activeTab === 'questions' && (
             <motion.div
               key="questions"
@@ -123,17 +92,6 @@ export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
               exit={{ opacity: 0, y: -10 }}
             >
               <QuestionList surveyId={survey.id} initialQuestions={survey.questions || []} />
-            </motion.div>
-          )}
-
-          {activeTab === 'settings' && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <SurveySettingsPanel survey={survey} onUpdate={handleUpdate} />
             </motion.div>
           )}
 
@@ -171,9 +129,8 @@ export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
         )}
       </AnimatePresence>
 
-      {/* Mobile Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-t border-zinc-800 px-4 py-2">
-        <div className="max-w-4xl mx-auto flex items-center justify-around">
+      {/* Sub-module Navigation */}
+      <nav className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-black/40 backdrop-blur-3xl border border-white/10 p-1.5 rounded-2xl flex items-center gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -181,22 +138,15 @@ export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-                  isActive ? 'text-cyan-400' : 'text-zinc-500 hover:text-white'
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all relative ${
+                  isActive ? 'bg-white text-black' : 'text-white/40 hover:text-white'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'fill-cyan-400/10' : ''}`} />
-                <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -top-2 w-12 h-1 bg-cyan-500 rounded-full"
-                  />
-                )}
+                <Icon size={14} />
+                <span className="text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
               </button>
             );
           })}
-        </div>
       </nav>
     </div>
   );

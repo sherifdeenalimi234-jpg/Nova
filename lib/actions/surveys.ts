@@ -169,7 +169,34 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
   console.log("[getSurveyForBuilder] Creator:", survey?.creator_id);
   console.log("[getSurveyForBuilder] Questions:", survey?.questions?.length || 0);
 
-  return { data: survey as Survey };
+  // Apply defensive defaults for all blueprint fields and arrays
+  const formattedSurvey = {
+    ...survey,
+    questions: survey?.questions || [],
+    status: survey?.status || 'draft',
+    visibility: survey?.visibility || 'Private',
+    survey_mode: survey?.survey_mode || 'Standard Survey',
+    research_category: survey?.research_category || 'General',
+    language: survey?.language || 'English',
+    tags: survey?.tags || [],
+    settings: survey?.settings || { anonymous: false, one_response_per_participant: true },
+    research_objective: survey?.research_objective || '',
+    target_audience: survey?.target_audience || '',
+    target_responses: survey?.target_responses || '0',
+    estimated_duration: survey?.estimated_duration || '',
+    research_timeline: survey?.research_timeline || '',
+    research_notes: survey?.research_notes || ''
+  };
+
+  // Ensure options is also an array for each question
+  if (formattedSurvey.questions) {
+    formattedSurvey.questions = (formattedSurvey.questions as any[]).map(q => ({
+      ...q,
+      options: q.options || []
+    }));
+  }
+
+  return { data: formattedSurvey as unknown as Survey };
 }
 
 export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {

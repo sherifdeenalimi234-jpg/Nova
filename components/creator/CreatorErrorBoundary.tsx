@@ -35,8 +35,8 @@ export class CreatorErrorBoundary extends Component<Props, State> {
           <div className="w-16 h-16 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6">
             <AlertCircle size={32} />
           </div>
-          <h2 className="text-xl font-black uppercase tracking-tight mb-2">Workspace Disruption</h2>
-          <p className="text-white/40 text-xs max-w-xs mx-auto mb-8 leading-relaxed">
+          <h2 className="text-xl font-black uppercase tracking-tight mb-2">Module Recovery</h2>
+          <p className="text-[9px] text-white/40 uppercase tracking-[0.3em] mb-8">Re-synchronizing creative data stream.</p>
             The neural link has been interrupted. We've logged the incident and are ready to reconnect.
           </p>
           <button

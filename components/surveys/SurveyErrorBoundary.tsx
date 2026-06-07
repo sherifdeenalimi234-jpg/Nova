@@ -38,7 +38,8 @@ export class SurveyErrorBoundary extends Component<Props, State> {
             <AlertCircle size={40} />
           </div>
 
-          <h2 className="text-2xl font-black uppercase tracking-tighter mb-4">Workspace Disruption</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter mb-4">Workspace Recovery</h2>
+          <p className="text-white/40 text-[10px] uppercase tracking-[0.4em] mb-8 font-medium">Re-calibrating research environment</p>
 
           <div className="max-w-2xl w-full bg-white/[0.02] border border-white/5 rounded-3xl p-6 mb-8 text-left overflow-hidden">
              <div className="flex items-center gap-2 mb-4 text-red-400">
@@ -68,7 +69,7 @@ export class SurveyErrorBoundary extends Component<Props, State> {
               className="flex items-center justify-center gap-3 px-10 py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all"
             >
               <RefreshCcw size={14} />
-              Re-initialize Workspace
+              Restore Signal
             </button>
             <button
               onClick={() => window.location.href = '/creator-surveys'}
