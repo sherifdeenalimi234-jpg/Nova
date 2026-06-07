@@ -1,11 +1,11 @@
 import { getSurveyForBuilder } from '@/lib/actions/surveys';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import BuilderClient from './BuilderClient';
+import OverviewContent from './OverviewContent';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BuilderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,10 +20,10 @@ export default async function BuilderPage({ params }: { params: Promise<{ id: st
     notFound();
   }
 
-  // Double check ownership
+  // Double check ownership (already handled in getSurveyForBuilder but for safety)
   if (survey.creator_id !== user.id) {
-    redirect('/creator/surveys');
+    redirect('/creator-surveys');
   }
 
-  return <BuilderClient initialSurvey={survey} />;
+  return <OverviewContent survey={survey} />;
 }

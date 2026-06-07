@@ -11,8 +11,8 @@ import {
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getCreatorSurveys, updateSurveyStatus, deleteSurvey, duplicateSurvey } from '@/lib/actions/surveys';
-import SurveyCard from '@/components/creator/SurveyCard';
-import DeleteSurveyModal from '@/components/creator/DeleteSurveyModal';
+import SurveyCard from '@/components/surveys/SurveyCard';
+import DeleteSurveyModal from '@/components/surveys/DeleteSurveyModal';
 import { Survey } from '@/lib/types/surveys';
 
 export default function SurveysManagementPage() {
@@ -134,7 +134,7 @@ export default function SurveysManagementPage() {
            <h1 className="text-2xl lg:text-3xl font-black uppercase tracking-tight mb-1">My Surveys</h1>
            <p className="text-white/40 text-[8px] lg:text-[10px] uppercase tracking-[0.4em]">Intelligence assets and node metrics</p>
         </div>
-        <Link href="/surveys/blueprint" className="px-5 py-3.5 rounded-2xl bg-nova-purple text-white text-[9px] lg:text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
+        <Link href="/creator-surveys/blueprint" className="px-5 py-3.5 rounded-2xl bg-nova-purple text-white text-[9px] lg:text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
            <Plus size={14} />
            New Survey
         </Link>
@@ -182,7 +182,7 @@ export default function SurveysManagementPage() {
                survey={survey}
                onStatusChange={handleStatusChange}
                onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
-               onEdit={(id) => router.push(`/creator/surveys/${id}/architect`)}
+               onEdit={(id) => router.push(`/creator-surveys/${id}/architect`)}
                onPreview={(id) => router.push(`/surveys/${id}`)}
                onDuplicate={handleDuplicate}
              />
@@ -206,7 +206,7 @@ export default function SurveysManagementPage() {
                    : "You haven't designed any surveys yet. Start building your data ecosystem today."}
               </p>
               {!searchQuery && statusFilter === 'all' && (
-                <Link href="/surveys/blueprint" className="px-8 py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all">
+                <Link href="/creator-surveys/blueprint" className="px-8 py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-nova-cyan transition-all">
                    Design First Survey
                 </Link>
               )}

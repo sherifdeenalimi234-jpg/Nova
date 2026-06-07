@@ -64,7 +64,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
       <aside className="hidden md:flex w-72 flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-3xl z-40">
         <div className="p-8">
            <button
-             onClick={() => router.push('/creator/surveys')}
+             onClick={() => router.push('/creator-surveys')}
              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group"
            >
               <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -77,7 +77,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                 return (
                   <Link
                     key={item.id}
-                    href={`/creator/surveys/${survey.id}${item.path}`}
+                    href={`/creator-surveys/${survey.id}${item.path}`}
                     className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${
                       isActive
                       ? 'bg-nova-purple text-white shadow-[0_10px_20px_rgba(188,19,254,0.2)]'
@@ -187,7 +187,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
              return (
                <Link
                  key={item.id}
-                 href={`/creator/surveys/${survey.id}${item.path}`}
+                 href={`/creator-surveys/${survey.id}${item.path}`}
                  className={`flex flex-col items-center gap-1.5 transition-all ${
                    isActive ? 'text-nova-purple' : 'text-white/30'
                  }`}
@@ -244,7 +244,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                       return (
                         <Link
                           key={item.id}
-                          href={`/creator/surveys/${survey.id}${item.path}`}
+                          href={`/creator-surveys/${survey.id}${item.path}`}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${
                             isActive
@@ -262,7 +262,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
 
                <div className="p-8 border-t border-white/5">
                   <button
-                    onClick={() => router.push('/creator/surveys')}
+                    onClick={() => router.push('/creator-surveys')}
                     className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest"
                   >
                      <ChevronLeft size={16} />

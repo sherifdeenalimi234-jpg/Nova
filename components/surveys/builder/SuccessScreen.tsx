@@ -73,7 +73,7 @@ export default function SuccessScreen({ surveyId, surveyTitle }: SuccessScreenPr
                 <ExternalLink className="w-5 h-5" />
             </Link>
             <Link
-                href="/creator/surveys"
+                href="/creator-surveys"
                 className="w-full py-4 bg-zinc-900 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all"
             >
                 Return to Dashboard

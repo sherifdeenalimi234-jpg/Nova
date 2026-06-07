@@ -85,6 +85,7 @@ export async function middleware(request: NextRequest) {
     '/feed',
     '/admin',
     '/creator',
+    '/creator-surveys',
     '/surveys',
     '/gallery',
     '/analytics',
@@ -133,7 +134,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 4. Creator-only route protection (Includes Creator Studio and Project Hub)
-  if (pathname.startsWith('/creator') || pathname === '/projects' || pathname.startsWith('/projects/create')) {
+  if (pathname.startsWith('/creator') || pathname.startsWith('/creator-surveys') || pathname === '/projects' || pathname.startsWith('/projects/create')) {
     if (user) {
       const is_creator = await isVerifiedCreator();
       const is_admin = await isAdminUser();
