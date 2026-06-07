@@ -33,7 +33,7 @@ interface WorkspaceShellProps {
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '' },
-  { id: 'build', label: 'Build', icon: Edit3, path: '/build' },
+  { id: 'build', label: 'Build', icon: Edit3, path: '/architect' },
   { id: 'logic', label: 'Logic', icon: GitBranch, path: '/logic' },
   { id: 'collect', label: 'Collect', icon: Send, path: '/collect' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
