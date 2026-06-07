@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/constants';
 
 /**
  * Proactively ensures the surveys table has the required blueprint columns.
@@ -19,7 +20,9 @@ export async function ensureSurveySchema() {
     .eq('id', user.id)
     .single();
 
-  if (!profile?.is_admin && user.email !== "sherifdeenalimititilope@gmail.com") {
+  const isAdmin = profile?.is_admin || user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  if (!isAdmin) {
     return { success: false, error: "Admin privilege required for schema repair." };
   }
 
@@ -65,7 +68,11 @@ export async function ensureSurveySchema() {
   }
 
   // Notify PostgREST to reload schema cache
-  await supabase.rpc('exec_sql_admin', { sql_query: "NOTIFY pgrst, 'reload schema';" });
+  try {
+    await supabase.rpc('exec_sql_admin', { sql_query: "NOTIFY pgrst, 'reload schema';" });
+  } catch (notifyErr) {
+    console.warn("[SchemaUtility] PostgREST reload notification failed:", notifyErr);
+  }
 
   return {
     success: errors.length === 0,

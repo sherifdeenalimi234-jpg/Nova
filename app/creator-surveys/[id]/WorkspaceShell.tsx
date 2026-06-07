@@ -54,6 +54,17 @@ const mobileNavItems = [
 export default function WorkspaceShell({ survey, children }: WorkspaceShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  if (!survey) {
+     return (
+       <div className="min-h-screen bg-black flex items-center justify-center p-8">
+          <div className="text-center">
+             <h2 className="text-xl font-bold mb-4">Workspace Load Error</h2>
+             <button onClick={() => window.location.href = '/creator-surveys'} className="px-6 py-2 bg-nova-purple rounded-xl">Return to Hub</button>
+          </div>
+       </div>
+     );
+  }
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 

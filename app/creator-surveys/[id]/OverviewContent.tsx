@@ -17,13 +17,23 @@ import {
   Zap,
   Layout,
   Layers,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Survey } from '@/lib/types/surveys';
 import Link from 'next/link';
 
 export default function OverviewContent({ survey }: { survey: Survey }) {
+  if (!survey) return null;
+
+  const responseCount = survey.response_count || 0;
+  const targetResponses = (survey.target_responses && !isNaN(parseInt(survey.target_responses)))
+    ? parseInt(survey.target_responses)
+    : 0;
+  const progress = targetResponses > 0 ? Math.min((responseCount / targetResponses) * 100, 100) : 0;
+  const isSchemaFallback = typeof survey.research_objective === 'string' && survey.research_objective.includes("Schema mismatch");
+
   const stats = [
     { label: 'Completion Rate', value: '0%', icon: Activity, color: 'text-nova-cyan' },
     { label: 'Avg. Duration', value: '0m', icon: Clock, color: 'text-nova-purple' },
@@ -73,16 +83,18 @@ export default function OverviewContent({ survey }: { survey: Survey }) {
                 <BarChart3 size={16} className="text-nova-cyan" />
               </div>
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-5xl font-black tracking-tighter">0</span>
-                <span className="text-lg font-bold text-white/20 uppercase">/ {survey.target_responses || 0}</span>
+                <span className="text-5xl font-black tracking-tighter">{responseCount}</span>
+                <span className="text-lg font-bold text-white/20 uppercase">/ {targetResponses || '--'}</span>
               </div>
-              <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Data stream inactive</p>
+              <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">
+                {responseCount > 0 ? 'Data stream active' : 'Data stream inactive'}
+              </p>
            </div>
            <div className="relative z-10 space-y-4">
               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
                  <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
                     className="h-full bg-nova-cyan shadow-[0_0_15px_rgba(0,242,255,0.5)]"
                  />
               </div>
@@ -113,6 +125,15 @@ export default function OverviewContent({ survey }: { survey: Survey }) {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Blueprint Details */}
         <div className="lg:col-span-8 space-y-6">
+           {isSchemaFallback && (
+             <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center gap-4">
+                <AlertCircle size={20} />
+                <div className="flex-1">
+                   <p className="text-[10px] font-black uppercase tracking-widest mb-1">Schema Mismatch Detected</p>
+                   <p className="text-[9px] opacity-80 uppercase leading-relaxed font-bold">Some blueprint fields are missing in your database. Run "Sync Schema" in the hub to repair.</p>
+                </div>
+             </div>
+           )}
            <div className="p-8 lg:p-12 rounded-[3rem] bg-white/[0.01] border border-white/5 space-y-10">
               <div className="space-y-6">
                  <div className="flex items-center gap-3 text-nova-cyan">

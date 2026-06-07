@@ -101,11 +101,14 @@ export async function createSurveyWorkspace(data: {
     .select('id')
     .single();
 
+  let finalId = survey?.id;
+  let warning = null;
+
   if (error) {
     console.error("[createSurveyWorkspace] Primary Insert Failed:", error);
 
     // If it's a column missing error, try a fallback to minimal record
-    if (error.code === '42703') {
+    if (error.code === '42703' || error.message?.includes('column')) {
        const { data: fallbackSurvey, error: fallbackError } = await supabase
          .from('surveys')
          .insert({
@@ -116,120 +119,123 @@ export async function createSurveyWorkspace(data: {
          .select('id')
          .single();
 
-       if (fallbackError) return { success: false, error: fallbackError.message };
-       return { success: true, id: fallbackSurvey.id, warning: "Some blueprint fields could not be saved due to schema mismatch." };
+       if (fallbackError) {
+         console.error("[createSurveyWorkspace] Fallback Insert Failed:", fallbackError);
+         return { success: false, error: fallbackError.message };
+       }
+       finalId = fallbackSurvey.id;
+       warning = "Some blueprint fields could not be saved due to schema mismatch.";
+    } else {
+      return { success: false, error: error.message };
     }
-
-    return { success: false, error: error.message };
   }
 
-  console.log("[createSurveyWorkspace] Successfully created survey:", survey.id);
+  if (!finalId) {
+    return { success: false, error: "Failed to establish research node ID." };
+  }
+
+  console.log("[createSurveyWorkspace] Successfully established survey node:", finalId);
 
   // 3. Activity Feed (Audit Requirement)
-  await supabase.from('activity_feed').insert({
-    user_id: user.id,
-    action: 'INITIALIZED BLUEPRINT WORKSPACE',
-    entity_id: survey.id,
-    entity_type: 'survey'
-  });
+  try {
+    await supabase.from('activity_feed').insert({
+      user_id: user.id,
+      action: 'INITIALIZED BLUEPRINT WORKSPACE',
+      entity_id: finalId,
+      entity_type: 'survey'
+    });
+  } catch (feedErr) {
+    console.error("[createSurveyWorkspace] Activity feed log failed (non-blocking):", feedErr);
+  }
 
   // 4. Force Revalidation
   revalidatePath('/creator-surveys');
-  revalidatePath(`/creator-surveys/${survey.id}`);
+  revalidatePath(`/creator-surveys/${finalId}`);
 
-  return { success: true, id: survey.id };
+  return { success: true, id: finalId, warning };
 }
 
 export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Survey, error?: any }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Authentication required." };
+    if (!user) return { error: { message: "Authentication required.", code: 'AUTH_REQUIRED' } };
 
-  // 1. Primary Attempt: Deep fetch with all blueprint columns
-  const { data: survey, error: surveyError } = await supabase
-    .from('surveys')
-    .select(`
-      id,
-      creator_id,
-      title,
-      description,
-      status,
-      category,
-      cover_image,
-      estimated_time,
-      tags,
-      settings,
-      created_at,
-      updated_at,
-      research_objective,
-      project_id,
-      survey_mode,
-      target_audience,
-      target_responses,
-      visibility,
-      estimated_duration,
-      research_category,
-      language,
-      research_timeline,
-      research_notes,
-      questions:survey_questions(
-        *,
-        options:survey_options(*)
-      )
-    `)
-    .eq('id', surveyId)
-    .eq('creator_id', user.id)
-    .order('order_index', { referencedTable: 'questions', ascending: true })
-    .order('order_index', { referencedTable: 'questions.options', ascending: true })
-    .single();
-
-  if (!surveyError) {
-    return { data: survey as Survey };
-  }
-
-  console.error("[getSurveyForBuilder] Primary Fetch Failed:", surveyError);
-
-  // 2. Fallback Attempt: Minimal fetch if blueprint columns are missing (Code 42703)
-  if (surveyError.code === '42703' || surveyError.message?.includes('column')) {
-    console.warn("[getSurveyForBuilder] Retrying with minimal schema fallback...");
-    const { data: fallbackSurvey, error: fallbackError } = await supabase
+    // 1. Primary Fetch Attempt (Full Schema)
+    let { data: survey, error: surveyError } = await supabase
       .from('surveys')
-      .select(`
-        id,
-        creator_id,
-        title,
-        description,
-        status,
-        created_at,
-        updated_at,
-        questions:survey_questions(
-          *,
-          options:survey_options(*)
-        )
-      `)
+      .select('*')
       .eq('id', surveyId)
       .eq('creator_id', user.id)
       .single();
 
-    if (fallbackError) {
-      console.error("[getSurveyForBuilder] Fallback Fetch Failed:", fallbackError);
-      return { error: fallbackError };
+    // 2. Schema Fallback (If columns missing)
+    if (surveyError) {
+      const isSchemaError = surveyError.code === '42703' || surveyError.message?.includes('column');
+      if (isSchemaError) {
+        console.warn("[getSurveyForBuilder] Schema mismatch detected, falling back to core fields...");
+        const fallback = await supabase
+          .from('surveys')
+          .select('id, creator_id, title, status, created_at, updated_at')
+          .eq('id', surveyId)
+          .eq('creator_id', user.id)
+          .single();
+
+        if (fallback.error) return { error: fallback.error };
+        survey = {
+          ...fallback.data,
+          research_objective: "Schema Sync Required.",
+          visibility: 'Private',
+          survey_mode: 'Standard',
+          target_audience: 'N/A',
+          target_responses: '0',
+          tags: []
+        };
+      } else {
+        return { error: surveyError };
+      }
     }
 
-    // Return partial data with defaults to prevent UI crashes
-    return {
-      data: {
-        ...fallbackSurvey,
-        research_objective: "Schema mismatch: Objective not retrieved.",
-        visibility: 'Private',
-        survey_mode: 'Standard Survey',
-        target_audience: 'N/A'
-      } as Survey
-    };
-  }
+    if (!survey) return { error: { message: "Node not found in intelligence stream.", code: 'NOT_FOUND' } };
 
-  return { error: surveyError };
+    // 3. Question Fetch (Robust Isolation)
+    let questionsData: any[] = [];
+    try {
+      const { data: qData, error: qError } = await supabase
+        .from('survey_questions')
+        .select('*, survey_options(*)')
+        .eq('survey_id', surveyId)
+        .order('order_index', { ascending: true });
+
+      if (!qError && qData) {
+        questionsData = qData.map((q: any) => ({
+          ...q,
+          options: q.survey_options || []
+        }));
+      }
+    } catch (innerQErr) {
+      console.warn("[getSurveyForBuilder] Questions retrieval failed (non-blocking):", innerQErr);
+    }
+
+    // 4. Final Assembler (Absolute Serializability)
+    const result = {
+      ...survey,
+      questions: questionsData,
+      tags: survey.tags || [],
+      settings: survey.settings || { anonymous: false, one_response_per_participant: true },
+      category: survey.category || 'General',
+      status: survey.status || 'draft'
+    };
+
+    // Return a clean POJO with BigInt support
+    return JSON.parse(JSON.stringify({ data: result as Survey }, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+  } catch (err: any) {
+    console.error("[getSurveyForBuilder] Critical System Fault:", err);
+    return { error: { message: "Internal Workspace Disruption", code: 'SYSTEM_FAULT' } };
+  }
 }
 
 export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {
@@ -374,7 +380,9 @@ export async function getCreatorSurveys(page: number = 1, pageSize: number = 10)
     response_count: (s as any).response_count?.[0]?.count || 0
   }));
 
-  return { data: formattedData as Survey[], count: count || 0 };
+  return JSON.parse(JSON.stringify({ data: formattedData as Survey[], count: count || 0 }, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
 }
 
 export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: any }> {
@@ -398,7 +406,9 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
     totalResponses: surveys.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
   };
 
-  return { data: stats };
+  return JSON.parse(JSON.stringify({ data: stats }, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
 }
 
 export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'published' | 'closed') {

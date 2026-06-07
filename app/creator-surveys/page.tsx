@@ -21,6 +21,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCreatorSurveys, updateSurveyStatus, deleteSurvey, duplicateSurvey } from '@/lib/actions/surveys';
+import { ensureSurveySchema } from '@/lib/actions/db';
 import SurveyCard from '@/components/surveys/SurveyCard';
 import DeleteSurveyModal from '@/components/surveys/DeleteSurveyModal';
 import { Survey } from '@/lib/types/surveys';
@@ -42,10 +43,23 @@ export default function SurveysManagementPage() {
     title: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
   useEffect(() => {
     fetchSurveys();
   }, []);
+
+  const handleRunRepair = async () => {
+    setIsRepairing(true);
+    const res = await ensureSurveySchema();
+    if (res.success) {
+      alert("Intelligence Node schema repaired successfully.");
+      fetchSurveys();
+    } else {
+      alert("Repair failed: " + res.error);
+    }
+    setIsRepairing(false);
+  };
 
   const fetchSurveys = async () => {
     setLoading(true);
@@ -178,13 +192,23 @@ export default function SurveysManagementPage() {
            <h1 className="text-3xl lg:text-4xl font-black uppercase tracking-tight mb-2">Creator Surveys</h1>
            <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Intelligence assets and research nodes</p>
         </div>
-        <Link
-          href="/creator-surveys/blueprint"
-          className="px-8 py-4 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(188,19,254,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-        >
-           <Plus size={16} />
-           Create Survey
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleRunRepair}
+            disabled={isRepairing}
+            className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          >
+             <Activity size={16} className={isRepairing ? 'animate-spin' : ''} />
+             {isRepairing ? 'Repairing...' : 'Sync Schema'}
+          </button>
+          <Link
+            href="/creator-surveys/blueprint"
+            className="px-8 py-4 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(188,19,254,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+          >
+             <Plus size={16} />
+             Create Survey
+          </Link>
+        </div>
       </header>
 
       {/* Search & Filter */}
@@ -209,20 +233,15 @@ export default function SurveysManagementPage() {
         <div className="grid grid-cols-1 gap-4 lg:gap-6">
            {filteredSurveys.length > 0 ? (
              filteredSurveys.map((survey) => (
-               <div
+               <SurveyCard
                  key={survey.id}
-                 onClick={() => router.push(`/creator-surveys/${survey.id}`)}
-                 className="cursor-pointer"
-               >
-                 <SurveyCard
-                   survey={survey}
-                   onStatusChange={handleStatusChange}
-                   onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
-                   onEdit={(id) => router.push(`/creator-surveys/${id}`)}
-                   onPreview={(id) => router.push(`/surveys/${id}`)}
-                   onDuplicate={handleDuplicate}
-                 />
-               </div>
+                 survey={survey}
+                 onStatusChange={handleStatusChange}
+                 onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
+                 onEdit={(id) => router.push(`/creator-surveys/${id}`)}
+                 onPreview={(id) => router.push(`/surveys/${id}`)}
+                 onDuplicate={handleDuplicate}
+               />
              ))
            ) : (
              <div className="py-20 flex flex-col items-center text-center opacity-30">
