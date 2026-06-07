@@ -1,20 +1,24 @@
-# SURVEY WORKSPACE IMPLEMENTATION PLAN
+# Survey Workspace Implementation Plan
 
-## 1. Accomplished Tasks
-- **Infrastructure**: Resolved the homepage redirect issue by establishing the `/creator/surveys/[id]` route structure.
-- **Redirection**: Updated the Survey Blueprint flow to point to the new Workspace Home.
-- **Shell Layout**: Implemented a responsive, persistent Workspace Shell with Header, Desktop Sidebar, and Mobile Bottom Navigation.
-- **Initialization**: Integrated authorization and metadata hydration into the workspace entry point.
-- **Modules**: Created the Overview landing page and placeholder modules for Build, Logic, Collect, Analytics, AI Lab, and Settings.
-- **Cleanup**: Deprecated legacy builder routes.
+## Phase 1B: Rebuilding the Shell
 
-## 2. UI/UX Verification
-- **Desktop Grid**: Sidebar (72px) and Main Canvas (max-7xl) implemented in `WorkspaceShell.tsx`.
-- **Mobile Support**: Bottom navigation and safe-area padding confirmed.
-- **Visual Style**: Dark mode with glassmorphism and neon purple accents consistent with Nova Creator Studio branding.
+### 1. Cleanup
+- Remove legacy files and sub-routes under `app/creator-surveys/[id]`.
 
-## 3. Next Steps (Future Phases)
-- **Phase 3**: Implementation of the Question Builder (Build Module).
-- **Phase 4**: Implementation of the Logic Engine.
-- **Phase 5**: Distribution and Collection channels.
-- **Phase 6**: Analytics and AI Insights integration.
+### 2. Base Shell
+- Implement `WorkspaceShell.tsx` with responsive layout.
+- Integrate `lucide-react` for iconography.
+- Use `framer-motion` for layout animations and drawer.
+
+### 3. Module Development
+- **Overview:** Build a rich dashboard summarizing survey metadata.
+- **Placeholders:** Create standardized placeholder screens for Build, Logic, Collect, Analytics, AI Lab, and Settings.
+
+### 4. Integration
+- Update `app/creator-surveys/page.tsx` with the new zero-state and list designs.
+- Fix the redirect logic in `blueprint/page.tsx` and `lib/actions/surveys.ts`.
+
+### 5. Verification
+- Test on mobile and desktop breakpoints.
+- Ensure state persistence (active tab) via URL segments.
+- Validate that creation flow lands on the Overview tab.

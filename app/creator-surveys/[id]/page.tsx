@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  console.log("[WorkspacePage] Loading workspace for ID:", id);
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -18,10 +18,11 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
   const { data: survey, error } = await getSurveyForBuilder(id);
 
   if (error || !survey) {
+    console.error(`[WorkspacePage] Survey not found or error: ${id}`, error);
     notFound();
   }
 
-  // Double check ownership (already handled in getSurveyForBuilder but for safety)
+  // Double check ownership
   if (survey.creator_id !== user.id) {
     redirect('/creator-surveys');
   }

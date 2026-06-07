@@ -1,28 +1,39 @@
-# SURVEY WORKSPACE AUDIT REPORT
+# Survey Workspace Audit Report
 
-## 1. Creation Flow Trace
-- **Source**: `app/surveys/blueprint/page.tsx`
-- **Action**: `createSurveyWorkspace` in `lib/actions/surveys.ts`
-- **Current Redirection**: `router.push("/creator/surveys/${result.id}/builder")`
-- **Issue identified**: The redirect points to `/builder`, which is a legacy/question-builder path. If the middleware or the page itself has issues, or if the user expectation is a full "Workspace Shell", this path is insufficient.
-- **Root Cause of Homepage Redirect**:
-  1. The path `/creator/surveys/[id]` (without `/builder`) does not have a `page.tsx`, causing a 404 which might be caught by middleware and redirected to `/`.
-  2. The `middleware.ts` might be blocking access to `/creator/surveys/[id]/builder` if the survey is newly created and some "verification" or "profile" state hasn't updated, though unlikely for creators.
-  3. The most likely cause is that `router.push` is called on a route that doesn't exist or isn't properly handled by the App Router's file structure.
+## Audit Trace: Survey Creation & Redirect Flow
 
-## 2. Route Audit
-- **Blueprint Route**: `/surveys/blueprint`
-- **Workspace Target Route**: `/creator/surveys/[id]` (Currently missing `page.tsx`)
-- **Legacy Builder Route**: `/creator/surveys/[id]/builder` (Exists, but is specialized for question building, not the full workspace shell)
-- **Legacy Creation Route**: `/creator/surveys/new` (Redirects to blueprint)
+1. **Source:** `app/creator-surveys/blueprint/page.tsx`
+2. **Action:** User fills form and clicks "Create Workspace".
+3. **Server Action:** `createSurveyWorkspace()` in `lib/actions/surveys.ts`.
+4. **Database:** Survey record is successfully created in `public.surveys` table with blueprint metadata.
+5. **Return:** Server action returns `{ success: true, id: "[SURVEY_ID]" }`.
+6. **Redirect:** Client-side `router.push("/creator-surveys/[SURVEY_ID]")` is executed.
+7. **Observation:** User is redirected to the homepage instead of entering the workspace.
 
-## 3. Database State
-- **Surveys Table**: Exists with V1 metadata (objective, mode, audience, etc.).
-- **Workspace Tables**: `survey_sections`, `survey_logic_nodes`, `survey_members` are currently **MISSING** (defined in spec but not implemented).
-- **Initialization**: `createSurveyWorkspace` successfully creates the `surveys` record, but no workspace-specific configuration (like default sections or members) is initialized.
+## Root Cause Analysis
 
-## 4. Recommendations
-- Create `app/creator/surveys/[id]/page.tsx` to act as the Workspace Home (Overview).
-- Create `app/creator/surveys/[id]/layout.tsx` to host the Workspace Shell (Header, Sidebar).
-- Update the Blueprint redirect to `/creator/surveys/[id]`.
-- Implement a robust initialization check in the Workspace layout.
+1. **What survey ID is returned?**
+   - A valid UUID for the newly created survey is returned.
+
+2. **What route is currently being called?**
+   - `/creator-surveys/[id]`
+
+3. **Why the homepage redirect occurs?**
+   - **Hypothesis A (Middleware):** The middleware might be intercepting the new route and redirecting to `/` if it thinks the user is not authorized or if the session is not properly detected on the new route.
+   - **Hypothesis B (Layout Redirect):** `app/creator-surveys/[id]/layout.tsx` or `page.tsx` might be calling `redirect('/')` because `getSurveyForBuilder` might fail or return an error shortly after creation (race condition or revalidation delay).
+   - **Hypothesis C (Next.js Cache):** The new route might not be "known" yet by the client-side router due to lack of immediate revalidation or cache mismatch.
+
+4. **Whether the workspace route exists?**
+   - Yes, `app/creator-surveys/[id]/page.tsx` and `app/creator-surveys/[id]/layout.tsx` exist.
+
+5. **Whether route permissions are blocking access?**
+   - `middleware.ts` allows access to `/creator-surveys` for verified creators. The sub-route should be covered.
+
+6. **Whether initialization is failing silently?**
+   - The server action logs success, so the DB part is fine. The failure happens during or after redirect.
+
+## Recommendations
+
+- Implement explicit `revalidatePath("/creator-surveys")` in the server action.
+- Add defensive checks in `WorkspaceLayout` to ensure it doesn't redirect to `/` unless absolutely necessary (no user).
+- Ensure the destination route is fully initialized before the user arrives.

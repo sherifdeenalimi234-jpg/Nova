@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Edit3,
@@ -19,7 +19,10 @@ import {
   Globe,
   ShieldAlert,
   MoreHorizontal,
-  Plus
+  Share2,
+  Info,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -33,7 +36,7 @@ interface WorkspaceShellProps {
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '' },
-  { id: 'build', label: 'Build', icon: Edit3, path: '/architect' },
+  { id: 'build', label: 'Build', icon: Edit3, path: '/build' },
   { id: 'logic', label: 'Logic', icon: GitBranch, path: '/logic' },
   { id: 'collect', label: 'Collect', icon: Send, path: '/collect' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
@@ -41,31 +44,18 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
 
+const mobileNavItems = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '' },
+  { id: 'build', label: 'Build', icon: Edit3, path: '/build' },
+  { id: 'collect', label: 'Collect', icon: Send, path: '/collect' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+];
+
 export default function WorkspaceShell({ survey, children }: WorkspaceShellProps) {
   const pathname = usePathname();
-
-  if (!survey) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto">
-            <X size={32} />
-          </div>
-          <h2 className="text-xl font-bold uppercase tracking-tight">Workspace Error</h2>
-          <p className="text-white/40 text-xs uppercase tracking-widest">Survey data stream not found</p>
-          <button
-            onClick={() => window.location.href = '/creator-surveys'}
-            className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest"
-          >
-            Return to Hub
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const getActiveTab = () => {
     const segments = pathname.split('/');
@@ -79,55 +69,59 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
   const VisibilityIcon = survey.visibility === 'Public' ? Globe : survey.visibility === 'Invite Only' ? ShieldAlert : Lock;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row overflow-hidden">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row overflow-hidden font-sans selection:bg-nova-purple/30">
 
-      {/* Desktop Sidebar */}
+      {/* 1. DESKTOP SIDEBAR */}
       <aside className="hidden md:flex w-72 flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-3xl z-40">
-        <div className="p-8">
+        <div className="p-8 flex flex-col h-full">
            <button
              onClick={() => router.push('/creator-surveys')}
-             className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group"
+             className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group w-fit"
            >
               <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Back to Hub</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Exit Workspace</span>
            </button>
 
-           <nav className="space-y-1">
+           <nav className="space-y-1 flex-1">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
                   <Link
                     key={item.id}
                     href={`/creator-surveys/${survey.id}${item.path}`}
-                    className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${
+                    className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all relative group ${
                       isActive
                       ? 'bg-nova-purple text-white shadow-[0_10px_20px_rgba(188,19,254,0.2)]'
                       : 'text-white/40 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <item.icon size={18} />
+                    <item.icon size={18} className={isActive ? 'animate-pulse' : ''} />
                     <span className="text-[11px] font-black uppercase tracking-[0.1em]">{item.label}</span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="absolute right-4 w-1.5 h-1.5 rounded-full bg-white"
+                      />
+                    )}
                   </Link>
                 );
               })}
            </nav>
-        </div>
 
-        <div className="mt-auto p-8">
-           <div className="p-6 rounded-[2rem] bg-gradient-to-br from-nova-cyan/10 to-transparent border border-white/5">
-              <p className="text-[9px] text-white/40 uppercase tracking-widest mb-2 font-medium">Node Version</p>
+           <div className="mt-8 p-6 rounded-[2rem] bg-gradient-to-br from-nova-cyan/10 to-transparent border border-white/5">
+              <p className="text-[9px] text-white/40 uppercase tracking-widest mb-2 font-black">Node System</p>
               <div className="flex items-center justify-between">
-                 <span className="text-xs font-bold">V1.0.0</span>
-                 <span className="text-[8px] px-2 py-0.5 rounded-full bg-nova-cyan/20 text-nova-cyan font-black">LATEST</span>
+                 <span className="text-xs font-black tracking-tighter">PHASE 1B</span>
+                 <span className="text-[8px] px-2 py-0.5 rounded-full bg-nova-cyan/20 text-nova-cyan font-black">STABLE</span>
               </div>
            </div>
         </div>
       </aside>
 
-      {/* Main Workspace Area */}
+      {/* 2. MAIN WORKSPACE CONTAINER */}
       <main className="flex-1 flex flex-col min-w-0 relative h-screen overflow-hidden">
 
-        {/* Header */}
+        {/* 3. WORKSPACE HEADER */}
         <header className="h-24 border-b border-white/5 bg-black/40 backdrop-blur-xl flex items-center justify-between px-6 lg:px-10 z-30 flex-shrink-0">
            <div className="flex items-center gap-6 min-w-0">
               <button
@@ -139,8 +133,8 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
 
               <div className="min-w-0">
                  <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-lg font-black uppercase tracking-tight truncate">{survey.title}</h1>
-                    <div className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${
+                    <h1 className="text-lg font-black uppercase tracking-tight truncate max-w-[200px] lg:max-w-md">{survey.title}</h1>
+                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${
                       survey?.status === 'published' ? 'bg-nova-green/20 text-nova-green' : 'bg-nova-cyan/20 text-nova-cyan'
                     }`}>
                        {survey?.status || 'DRAFT'}
@@ -151,21 +145,25 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                        <VisibilityIcon size={12} />
                        <span className="text-[9px] font-bold uppercase tracking-widest">{survey?.visibility || 'Private'}</span>
                     </div>
-                    <div className="h-3 w-px bg-white/10 hidden sm:block" />
-                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest hidden sm:block truncate max-w-[200px]">Project ID: {survey?.project_id || 'Global'}</span>
+                    <div className="h-3 w-px bg-white/10" />
+                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest truncate max-w-[150px]">Project: {survey?.project_id ? 'Linked' : 'Global'}</span>
                  </div>
               </div>
            </div>
 
            <div className="flex items-center gap-2 lg:gap-4">
+              {/* Auto-save Indicator */}
               <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 mr-2">
                  <div className="w-1.5 h-1.5 rounded-full bg-nova-green animate-pulse" />
-                 <span className="text-[8px] font-black uppercase tracking-widest text-white/40">Auto-saved</span>
+                 <span className="text-[8px] font-black uppercase tracking-widest text-white/40">Sync Active</span>
               </div>
 
               <div className="flex items-center gap-2">
-                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all">
+                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all" title="Preview">
                     <Eye size={18} />
+                 </button>
+                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all lg:hidden">
+                    <Save size={18} />
                  </button>
                  <button className="hidden lg:flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">
                     <Save size={14} />
@@ -175,35 +173,83 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                     <Rocket size={14} />
                     <span className="hidden sm:inline">Publish</span>
                  </button>
+                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all">
+                    <MoreHorizontal size={18} />
+                 </button>
               </div>
            </div>
         </header>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar scroll-smooth">
-           <div className="p-6 lg:p-10 max-w-7xl mx-auto pb-32 md:pb-20">
-              {children}
+        {/* 4. MAIN WORKSPACE CANVAS & 5. RIGHT CONTEXT PANEL */}
+        <div className="flex-1 flex overflow-hidden relative">
+           {/* Main Canvas */}
+           <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar scroll-smooth bg-black/20">
+              <div className="p-6 lg:p-10 max-w-5xl mx-auto pb-40 md:pb-20">
+                 {children}
+              </div>
            </div>
+
+           {/* Right Context Panel (Desktop Only) */}
+           <aside className="hidden xl:flex w-80 border-l border-white/5 bg-white/[0.01] flex-col p-8 space-y-8 overflow-y-auto">
+              <div className="space-y-6">
+                 <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-nova-cyan/10 flex items-center justify-center text-nova-cyan">
+                       <Info size={16} />
+                    </div>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest">Context Engine</h3>
+                 </div>
+
+                 <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 space-y-4">
+                    <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-tight">
+                       This panel provides context-aware tools and insights based on your active module.
+                    </p>
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                       <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-white/20 uppercase font-black">Status</span>
+                          <span className="text-[9px] text-nova-green font-black">OPTIMAL</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-white/20 uppercase font-black">Last Sync</span>
+                          <span className="text-[9px] text-white/40 font-black tracking-tighter">JUST NOW</span>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="space-y-4">
+                 <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-white/20 px-2">Quick Actions</h4>
+                 <button className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+                    <Share2 size={16} className="text-white/20 group-hover:text-nova-cyan transition-colors" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Share Access</span>
+                 </button>
+                 <button className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+                    <CheckCircle2 size={16} className="text-white/20 group-hover:text-nova-green transition-colors" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Run Diagnostics</span>
+                 </button>
+              </div>
+           </aside>
         </div>
 
-        {/* Status Bar */}
+        {/* 6. STATUS BAR (Desktop Only) */}
         <footer className="hidden md:flex h-10 border-t border-white/5 bg-black/60 backdrop-blur-xl items-center justify-between px-6 z-30">
            <div className="flex items-center gap-6">
-              <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Environment: V1.0 - ALPHA</span>
+              <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">WORKSPACE V1.0B</span>
               <div className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-nova-purple" />
-                 <span className="text-[9px] font-bold text-nova-purple uppercase tracking-widest">Workspace Stable</span>
+                 <div className="w-1.5 h-1.5 rounded-full bg-nova-purple animate-pulse" />
+                 <span className="text-[9px] font-bold text-nova-purple uppercase tracking-widest">INTELLIGENCE STREAM ACTIVE</span>
               </div>
            </div>
            <div className="flex items-center gap-4 text-white/20">
-              <span className="text-[9px] font-bold uppercase tracking-widest">Build Module Active</span>
-              <span className="text-[9px] font-bold uppercase tracking-widest">Lat: 24ms</span>
+              <div className="flex items-center gap-2">
+                 <AlertCircle size={10} />
+                 <span className="text-[9px] font-bold uppercase tracking-widest">NO LATENCY DETECTED</span>
+              </div>
            </div>
         </footer>
 
-        {/* Mobile Bottom Navigation */}
+        {/* 7. MOBILE BOTTOM NAVIGATION */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around px-4 z-[60] safe-area-bottom">
-           {navItems.filter(i => ['overview', 'build', 'collect', 'analytics'].includes(i.id)).map((item) => {
+           {mobileNavItems.map((item) => {
              const isActive = activeTab === item.id;
              return (
                <Link
@@ -213,7 +259,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                    isActive ? 'text-nova-purple' : 'text-white/30'
                  }`}
                >
-                 <item.icon size={20} />
+                 <item.icon size={20} className={isActive ? 'scale-110' : ''} />
                  <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
                </Link>
              );
@@ -228,7 +274,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
         </nav>
       </main>
 
-      {/* Mobile Drawer */}
+      {/* MOBILE DRAWER (Full Navigation) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -251,7 +297,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                      <div className="w-8 h-8 rounded-lg bg-nova-purple flex items-center justify-center">
                         <Rocket size={16} />
                      </div>
-                     <span className="text-xs font-black uppercase tracking-widest">Workspace</span>
+                     <span className="text-xs font-black uppercase tracking-widest">Node Map</span>
                   </div>
                   <button onClick={() => setIsMobileMenuOpen(false)}>
                      <X size={20} className="text-white/40" />
@@ -269,7 +315,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${
                             isActive
-                            ? 'bg-nova-purple text-white'
+                            ? 'bg-nova-purple text-white shadow-lg'
                             : 'text-white/40 hover:bg-white/5 hover:text-white'
                           }`}
                         >
@@ -281,10 +327,10 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                   </nav>
                </div>
 
-               <div className="p-8 border-t border-white/5">
+               <div className="p-8 border-t border-white/5 space-y-4">
                   <button
                     onClick={() => router.push('/creator-surveys')}
-                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest"
+                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest border border-white/5"
                   >
                      <ChevronLeft size={16} />
                      Exit Workspace
@@ -294,6 +340,17 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
           </>
         )}
       </AnimatePresence>
+
+      {/* MOBILE STICKY ACTIONS */}
+      <div className="md:hidden fixed bottom-24 right-6 flex flex-col gap-3 z-50 pointer-events-none">
+         <button className="w-12 h-12 rounded-full bg-nova-purple text-white shadow-2xl flex items-center justify-center pointer-events-auto active:scale-90 transition-transform">
+            <Rocket size={20} />
+         </button>
+         <button className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white shadow-2xl flex items-center justify-center pointer-events-auto active:scale-90 transition-transform">
+            <Save size={20} />
+         </button>
+      </div>
+
     </div>
   );
 }

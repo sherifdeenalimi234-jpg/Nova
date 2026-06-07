@@ -113,6 +113,10 @@ export async function createSurveyWorkspace(data: {
     entity_type: 'survey'
   });
 
+  // 4. Force Revalidation
+  revalidatePath('/creator-surveys');
+  revalidatePath(`/creator-surveys/${survey.id}`);
+
   return { success: true, id: survey.id };
 }
 
@@ -188,7 +192,7 @@ export async function updateSurveyDetails(surveyId: string, updates: Partial<Sur
 
   if (error) return { error };
 
-  revalidatePath(`/creator-surveys/${surveyId}/architect`);
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { data };
 }
 
@@ -376,7 +380,7 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
 
   revalidatePath('/creator-surveys');
   revalidatePath('/creator');
-  revalidatePath(`/creator-surveys/${surveyId}/architect`);
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { data };
 }
 
