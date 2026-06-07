@@ -14,12 +14,12 @@ import {
   Plus
 } from 'lucide-react';
 import Link from 'next/link';
-import SurveyInfo from '@/components/creator/builder/SurveyInfo';
-import SurveySettingsPanel from '@/components/creator/builder/SurveySettingsPanel';
-import QuestionList from '@/components/creator/builder/QuestionList';
-import ValidationOverlay from '@/components/creator/builder/ValidationOverlay';
-import SurveyPreview from '@/components/creator/builder/SurveyPreview';
-import SuccessScreen from '@/components/creator/builder/SuccessScreen';
+import SurveyInfo from '@/components/surveys/builder/SurveyInfo';
+import SurveySettingsPanel from '@/components/surveys/builder/SurveySettingsPanel';
+import QuestionList from '@/components/surveys/builder/QuestionList';
+import ValidationOverlay from '@/components/surveys/builder/ValidationOverlay';
+import SurveyPreview from '@/components/surveys/builder/SurveyPreview';
+import SuccessScreen from '@/components/surveys/builder/SuccessScreen';
 import { updateSurveyStatus } from '@/lib/actions/surveys';
 
 interface BuilderClientProps {
@@ -65,7 +65,7 @@ export default function BuilderClient({ initialSurvey }: BuilderClientProps) {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/creator/surveys"
+              href="/creator-surveys"
               className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />

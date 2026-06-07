@@ -9,14 +9,14 @@ import { Loader2 } from 'lucide-react';
 /**
  * LEGACY SURVEY ARCHITECT ENTRY POINT
  * This route is deprecated in favor of the Survey Blueprint system (V1).
- * All traffic is now redirected to /surveys/blueprint.
+ * All traffic is now redirected to /creator-surveys/blueprint.
  */
 export default function LegacyCreateSurveyPage() {
   const router = useRouter();
 
   useEffect(() => {
     // Redirecting to the modern Survey Blueprint initialization flow
-    router.replace('/surveys/blueprint');
+    router.replace('/creator-surveys/blueprint');
   }, [router]);
 
   return (

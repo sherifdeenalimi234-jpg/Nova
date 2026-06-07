@@ -26,7 +26,7 @@ export default async function WorkspaceLayout({
   }
 
   if (survey.creator_id !== user.id) {
-    redirect('/creator/surveys');
+    redirect('/creator-surveys');
   }
 
   return (
