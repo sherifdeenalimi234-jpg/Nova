@@ -105,7 +105,8 @@ export default function SurveyBlueprint() {
     });
 
     if (result.success) {
-      router.push(`/creator-surveys/${result.id}`);
+      // Immediate, smooth transition to the workspace Overview
+      window.location.href = `/creator-surveys/${result.id}`;
     } else {
       alert("Workspace creation failed: " + result.error);
       setIsInitializing(false);

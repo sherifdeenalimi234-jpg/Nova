@@ -314,7 +314,7 @@ export async function getCreatorSurveys(page: number = 1, pageSize: number = 10)
     response_count: (s as any).response_count?.[0]?.count || 0
   }));
 
-  return { data: formattedData as Survey[], count: count || 0 };
+  return { data: (formattedData || []) as Survey[], count: count || 0 };
 }
 
 export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: any }> {
@@ -330,12 +330,14 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
 
   if (error) return { error };
 
+  const surveyList = surveys || [];
+
   const stats = {
-    total: surveys.length,
-    active: surveys.filter(s => s.status === 'published').length,
-    draft: surveys.filter(s => s.status === 'draft').length,
-    closed: surveys.filter(s => s.status === 'closed').length,
-    totalResponses: surveys.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
+    total: surveyList.length,
+    active: surveyList.filter(s => s.status === 'published').length,
+    draft: surveyList.filter(s => s.status === 'draft').length,
+    closed: surveyList.filter(s => s.status === 'closed').length,
+    totalResponses: surveyList.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
   };
 
   return { data: stats };

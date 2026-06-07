@@ -84,40 +84,40 @@ export default function SurveyInfo({ survey, onUpdate }: SurveyInfoProps) {
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="space-y-4">
+    <div className="space-y-8 pb-20">
+      <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1">Survey Title</label>
+          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1">Survey Title</label>
           <input
             type="text"
             name="title"
             value={formData.title}
             onChange={handleChange}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-nova-cyan/50 transition-all"
             placeholder="e.g., Q2 Product Feedback"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1">Description</label>
+          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1">Description</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
             rows={4}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan/50 transition-all resize-none"
             placeholder="Tell participants what this survey is about..."
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1">Category</label>
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1">Category</label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm appearance-none focus:border-nova-cyan/50 transition-all"
             >
               {CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
@@ -126,49 +126,49 @@ export default function SurveyInfo({ survey, onUpdate }: SurveyInfoProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Est. Completion Time (min)
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1 flex items-center gap-1.5">
+              <Clock size={12} /> Est. Time (min)
             </label>
             <input
               type="number"
               name="estimated_time"
               value={formData.estimated_time}
               onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan/50 transition-all"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1 flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5" /> Cover Image URL
+          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1 flex items-center gap-1.5">
+            <ImageIcon size={12} /> Cover Image URL
           </label>
           <input
             type="text"
             name="cover_image"
             value={formData.cover_image}
             onChange={handleChange}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan/50 transition-all"
             placeholder="https://images.unsplash.com/..."
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1.5 ml-1 flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5" /> Tags
+          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-3 ml-1 flex items-center gap-1.5">
+            <Tag size={12} /> Tags
           </label>
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2 mb-4">
             <input
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addTag()}
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm focus:border-nova-cyan/50 transition-all"
               placeholder="Add a tag..."
             />
             <button
               onClick={addTag}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              className="px-6 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
             >
               Add
             </button>
@@ -177,24 +177,24 @@ export default function SurveyInfo({ survey, onUpdate }: SurveyInfoProps) {
             {formData.tags.map(tag => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-full text-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-nova-cyan/10 border border-nova-cyan/30 text-nova-cyan rounded-xl text-[10px] font-black uppercase tracking-widest"
               >
                 {tag}
-                <button onClick={() => removeTag(tag)} className="hover:text-white">×</button>
+                <button onClick={() => removeTag(tag)} className="hover:text-white transition-colors">×</button>
               </span>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="fixed bottom-20 left-0 right-0 p-4 lg:relative lg:bottom-0 lg:p-0 flex justify-end">
+      <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-400 disabled:bg-zinc-700 text-black font-bold rounded-xl transition-all shadow-lg shadow-cyan-500/20"
+          className="flex items-center gap-3 px-8 py-4 bg-nova-cyan text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all disabled:opacity-50"
         >
-          <Save className="w-4 h-4" />
-          {isSaving ? 'Saving...' : 'Save Details'}
+          <Save size={16} />
+          {isSaving ? 'Establishing...' : 'Save Changes'}
         </button>
       </div>
     </div>

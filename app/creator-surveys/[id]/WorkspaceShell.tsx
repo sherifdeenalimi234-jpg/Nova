@@ -164,6 +164,13 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
               </div>
 
               <div className="flex items-center gap-2">
+                 <button
+                    onClick={() => router.push('/creator-surveys')}
+                    className="hidden xl:flex items-center justify-center gap-2 px-5 h-11 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all mr-2"
+                 >
+                    <ChevronLeft size={14} />
+                    Exit
+                 </button>
                  <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all">
                     <Eye size={18} />
                  </button>
@@ -284,7 +291,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                <div className="p-8 border-t border-white/5">
                   <button
                     onClick={() => router.push('/creator-surveys')}
-                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest"
+                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
                   >
                      <ChevronLeft size={16} />
                      Exit Workspace
