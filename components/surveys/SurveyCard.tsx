@@ -36,6 +36,12 @@ export default function SurveyCard({
   onDuplicate
 }: SurveyCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+
+  if (!survey) {
+    console.warn("SurveyCard received undefined survey object");
+    return null;
+  }
+
   const responseCount = (survey as any).response_count || 0;
 
   const statusConfig: Record<string, { color: string; label: string }> = {
@@ -43,6 +49,7 @@ export default function SurveyCard({
     published: { color: 'bg-nova-green/10 text-nova-green', label: 'Live' },
     closed: { color: 'bg-white/5 text-white/40', label: 'Closed' }
   };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -58,7 +65,7 @@ export default function SurveyCard({
         <div className="flex-1 space-y-2 lg:space-y-3">
           <div className="flex items-center gap-2 lg:gap-3">
             <span className={`px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full text-[7px] lg:text-[8px] font-black uppercase tracking-widest ${statusConfig[survey.status]?.color || 'bg-white/5 text-white/40'}`}>
-              {statusConfig[survey.status]?.label || survey.status}
+              {statusConfig[survey.status]?.label || survey.status || 'UNKNOWN'}
             </span>
             <span className="text-[8px] lg:text-[9px] font-black uppercase tracking-widest text-white/20 flex items-center gap-1">
               <Calendar size={9} />

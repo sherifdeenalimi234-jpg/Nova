@@ -20,13 +20,16 @@ export default function AnalyticsPlaceholder() {
            { label: 'Total Responses', value: '0', icon: Users, color: 'text-nova-cyan' },
            { label: 'Completion Rate', value: '0%', icon: TrendingUp, color: 'text-nova-purple' },
            { label: 'Avg. Duration', value: '0m', icon: BarChart3, color: 'text-nova-green' },
-         ].map((stat, idx) => (
-           <div key={idx} className="p-10 rounded-[2.5rem] bg-white/[0.02] border border-white/5 relative overflow-hidden group">
-              <stat.icon size={64} className={`absolute -right-4 -bottom-4 opacity-5 ${stat.color} group-hover:scale-110 transition-transform`} />
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">{stat.label}</p>
-              <div className="text-4xl font-black">{stat.value}</div>
-           </div>
-         ))}
+         ].map((stat, idx) => {
+           if (!stat) return null;
+           return (
+             <div key={idx} className="p-10 rounded-[2.5rem] bg-white/[0.02] border border-white/5 relative overflow-hidden group">
+                <stat.icon size={64} className={`absolute -right-4 -bottom-4 opacity-5 ${stat.color || 'text-white'} group-hover:scale-110 transition-transform`} />
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">{stat.label}</p>
+                <div className="text-4xl font-black">{stat.value}</div>
+             </div>
+           );
+         })}
       </div>
 
       <div className="p-20 rounded-[3rem] bg-gradient-to-br from-white/[0.02] to-transparent border border-white/5 flex flex-col items-center text-center">

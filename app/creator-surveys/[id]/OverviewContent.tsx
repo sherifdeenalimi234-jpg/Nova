@@ -86,14 +86,14 @@ export default function OverviewContent({ survey }: { survey: Survey }) {
                        <Target size={16} />
                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Survey Mode</span>
                     </div>
-                    <p className="text-sm font-bold">{survey.survey_mode}</p>
+                    <p className="text-sm font-bold">{survey.survey_mode || 'Standard Collection'}</p>
                  </div>
                  <div className="space-y-4">
                     <div className="flex items-center gap-2 text-white/40">
                        <Users size={16} />
                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Target Audience</span>
                     </div>
-                    <p className="text-sm font-bold">{survey.target_audience}</p>
+                    <p className="text-sm font-bold">{survey.target_audience || 'General Community'}</p>
                  </div>
               </div>
            </div>

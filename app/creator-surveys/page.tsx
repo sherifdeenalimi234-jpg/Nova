@@ -67,6 +67,7 @@ export default function SurveysManagementPage() {
 
   const filteredSurveys = useMemo(() => {
     return surveys.filter(survey => {
+      if (!survey || !survey.title) return false;
       const matchesSearch = survey.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (survey.category && survey.category.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || survey.status === statusFilter;
@@ -176,17 +177,20 @@ export default function SurveysManagementPage() {
              <div key={i} className="h-40 rounded-[2.5rem] bg-white/5 animate-pulse border border-white/5" />
            ))
          ) : filteredSurveys.length > 0 ? (
-           filteredSurveys.map((survey) => (
-             <SurveyCard
-               key={survey.id}
-               survey={survey}
-               onStatusChange={handleStatusChange}
-               onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
-               onEdit={(id) => router.push(`/creator-surveys/${id}/architect`)}
-               onPreview={(id) => router.push(`/surveys/${id}`)}
-               onDuplicate={handleDuplicate}
-             />
-           ))
+           filteredSurveys.map((survey) => {
+             if (!survey) return null;
+             return (
+               <SurveyCard
+                 key={survey.id}
+                 survey={survey}
+                 onStatusChange={handleStatusChange}
+                 onDelete={(id) => setDeleteModal({ isOpen: true, id, title: survey.title })}
+                 onEdit={(id) => router.push(`/creator-surveys/${id}/architect`)}
+                 onPreview={(id) => router.push(`/surveys/${id}`)}
+                 onDuplicate={handleDuplicate}
+               />
+             );
+           })
          ) : (
            <div className="flex flex-col items-center justify-center py-24 text-center p-8 rounded-[3rem] border border-dashed border-white/10 bg-white/[0.01]">
               <div className="w-20 h-20 rounded-[2.5rem] bg-white/5 flex items-center justify-center text-white/10 mb-6">

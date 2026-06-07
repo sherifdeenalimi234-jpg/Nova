@@ -89,7 +89,7 @@ export default function SurveyPreview({ survey }: SurveyPreviewProps) {
                   <div className="text-center flex-1">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Privacy</p>
                     <p className="text-lg font-bold text-white text-cyan-400">
-                      {survey.settings.anonymous ? 'Anon' : 'Public'}
+                      {survey.settings?.anonymous ? 'Anon' : 'Public'}
                     </p>
                   </div>
                 </div>

@@ -27,7 +27,24 @@ export interface Survey {
   cover_image: string | null;
   estimated_time: number;
   tags: string[];
-  settings: SurveySettings;
+  settings?: SurveySettings;
+  theme?: {
+    color?: string;
+    background?: string;
+    font?: string;
+  };
+  config?: {
+    color?: string;
+    [key: string]: any;
+  };
+  badge?: {
+    color?: string;
+    text?: string;
+  };
+  analytics?: {
+    color?: string;
+    [key: string]: any;
+  };
   created_at: string;
   updated_at: string;
   // Join data
