@@ -124,7 +124,7 @@ export default function CreatorDashboard() {
            <p className="text-white/40 text-[8px] lg:text-[10px] uppercase tracking-[0.4em]">Manage innovation assets</p>
         </div>
         <div className="flex gap-3 lg:gap-4">
-           <Link href="/surveys/blueprint" className="flex-1 lg:flex-none px-6 py-3.5 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
+           <Link href="/creator-surveys/blueprint" className="flex-1 lg:flex-none px-6 py-3.5 rounded-2xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(112,0,255,0.4)] transition-all flex items-center justify-center gap-2">
               <Plus size={14} />
               New Survey
            </Link>
@@ -218,7 +218,7 @@ export default function CreatorDashboard() {
                     ))
                  ) : recentSurveys.length > 0 ? (
                     recentSurveys.map((survey, i) => (
-                      <Link href={`/creator/surveys`} key={survey.id} className="flex items-center justify-between group cursor-pointer">
+                      <Link href={`/creator-surveys`} key={survey.id} className="flex items-center justify-between group cursor-pointer">
                          <div className="min-w-0 flex-1 mr-4">
                             <h4 className="text-[11px] font-bold text-white group-hover:text-nova-cyan transition-colors truncate">{survey.title}</h4>
                             <p className="text-[8px] text-white/30 uppercase tracking-widest">{survey.category || 'General'}</p>
@@ -237,7 +237,7 @@ export default function CreatorDashboard() {
                     </div>
                  )}
               </div>
-              <Link href="/creator/surveys" className="block w-full mt-10 py-4 rounded-2xl border border-white/5 bg-white/2 text-[9px] font-black uppercase tracking-widest text-center hover:bg-white/5 transition-all">
+              <Link href="/creator-surveys" className="block w-full mt-10 py-4 rounded-2xl border border-white/5 bg-white/2 text-[9px] font-black uppercase tracking-widest text-center hover:bg-white/5 transition-all">
                  View All Surveys
               </Link>
            </div>
@@ -249,8 +249,8 @@ export default function CreatorDashboard() {
          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mb-8 ml-2">Quick Launch</h2>
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { name: 'View Drafts', icon: FileEdit, href: '/creator/surveys?status=draft' },
-              { name: 'Active Surveys', icon: CheckCircle2, href: '/creator/surveys?status=published' },
+              { name: 'View Drafts', icon: FileEdit, href: '/creator-surveys?status=draft' },
+              { name: 'Active Surveys', icon: CheckCircle2, href: '/creator-surveys?status=published' },
               { name: 'Analytics', icon: TrendingUp, href: '/creator/analytics' },
               { name: 'Profile Settings', icon: User, href: '/creator/settings' },
             ].map((action) => (

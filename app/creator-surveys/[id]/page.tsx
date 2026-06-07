@@ -22,7 +22,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
 
   // Double check ownership (already handled in getSurveyForBuilder but for safety)
   if (survey.creator_id !== user.id) {
-    redirect('/creator/surveys');
+    redirect('/creator-surveys');
   }
 
   return <OverviewContent survey={survey} />;

@@ -31,8 +31,7 @@ export async function createSurvey(data: {
 
   if (error) return { error };
 
-  revalidatePath('/creator/surveys');
-  revalidatePath('/creator');
+  revalidatePath('/creator-surveys');
   return { data: survey };
 }
 
@@ -111,8 +110,7 @@ export async function createSurveyWorkspace(data: {
     entity_type: 'survey'
   });
 
-  revalidatePath('/surveys');
-  revalidatePath('/creator/surveys');
+  revalidatePath('/creator-surveys');
 
   return { success: true, id: survey.id };
 }
@@ -131,6 +129,17 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
       creator_id,
       title,
       description,
+      research_objective,
+      project_id,
+      survey_mode,
+      target_audience,
+      target_responses,
+      visibility,
+      estimated_duration,
+      research_category,
+      language,
+      research_timeline,
+      research_notes,
       status,
       category,
       cover_image,
@@ -171,7 +180,7 @@ export async function updateSurveyDetails(surveyId: string, updates: Partial<Sur
 
   if (error) return { error };
 
-  revalidatePath(`/creator/surveys/${surveyId}/architect`);
+  revalidatePath(`/creator-surveys/${surveyId}/architect`);
   return { data };
 }
 
@@ -357,9 +366,8 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
       .eq('post_type', 'survey');
   }
 
-  revalidatePath('/creator/surveys');
-  revalidatePath('/creator');
-  revalidatePath(`/creator/surveys/${surveyId}/architect`);
+  revalidatePath('/creator-surveys');
+  revalidatePath(`/creator-surveys/${surveyId}/architect`);
   return { data };
 }
 
@@ -416,8 +424,7 @@ export async function duplicateSurvey(surveyId: string) {
     }
   }
 
-  revalidatePath('/creator/surveys');
-  revalidatePath('/creator');
+  revalidatePath('/creator-surveys');
   return { data: newSurvey };
 }
 
@@ -435,8 +442,7 @@ export async function deleteSurvey(surveyId: string) {
 
   if (error) return { error };
 
-  revalidatePath('/creator/surveys');
-  revalidatePath('/creator');
+  revalidatePath('/creator-surveys');
   return { success: true };
 }
 

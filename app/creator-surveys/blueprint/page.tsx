@@ -105,7 +105,7 @@ export default function SurveyBlueprint() {
     });
 
     if (result.success) {
-      router.push(`/creator/surveys/${result.id}`);
+      router.push(`/creator-surveys/${result.id}`);
     } else {
       alert("Workspace creation failed: " + result.error);
       setIsInitializing(false);

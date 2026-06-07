@@ -26,12 +26,14 @@ export default async function WorkspaceLayout({
   }
 
   if (survey.creator_id !== user.id) {
-    redirect('/creator/surveys');
+    redirect('/creator-surveys');
   }
 
   return (
-    <WorkspaceShell survey={survey}>
-      {children}
-    </WorkspaceShell>
+    <div className="fixed inset-0 z-[100] bg-black">
+        <WorkspaceShell survey={survey}>
+            {children}
+        </WorkspaceShell>
+    </div>
   );
 }

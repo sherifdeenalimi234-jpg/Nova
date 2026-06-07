@@ -55,7 +55,9 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
 
   const activeTab = getActiveTab();
 
-  const VisibilityIcon = survey.visibility === 'Public' ? Globe : survey.visibility === 'Invite Only' ? ShieldAlert : Lock;
+  const VisibilityIcon = survey?.visibility === 'Public' ? Globe : survey?.visibility === 'Invite Only' ? ShieldAlert : Lock;
+
+  if (!survey) return null;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row overflow-hidden">
@@ -64,7 +66,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
       <aside className="hidden md:flex w-72 flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-3xl z-40">
         <div className="p-8">
            <button
-             onClick={() => router.push('/creator/surveys')}
+                onClick={() => router.push('/creator-surveys')}
              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-10 group"
            >
               <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -118,20 +120,20 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
 
               <div className="min-w-0">
                  <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-lg font-black uppercase tracking-tight truncate">{survey.title}</h1>
+                    <h1 className="text-lg font-black uppercase tracking-tight truncate">{survey?.title}</h1>
                     <div className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${
-                      survey.status === 'published' ? 'bg-nova-green/20 text-nova-green' : 'bg-nova-cyan/20 text-nova-cyan'
+                      survey?.status === 'published' ? 'bg-nova-green/20 text-nova-green' : 'bg-nova-cyan/20 text-nova-cyan'
                     }`}>
-                       {survey.status}
+                       {survey?.status || 'draft'}
                     </div>
                  </div>
                  <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-white/20">
                        <VisibilityIcon size={12} />
-                       <span className="text-[9px] font-bold uppercase tracking-widest">{survey.visibility}</span>
+                       <span className="text-[9px] font-bold uppercase tracking-widest">{survey?.visibility || 'Private'}</span>
                     </div>
                     <div className="h-3 w-px bg-white/10 hidden sm:block" />
-                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest hidden sm:block truncate max-w-[200px]">Project ID: {survey.project_id || 'Global'}</span>
+                    <span className="text-[9px] text-white/20 font-bold uppercase tracking-widest hidden sm:block truncate max-w-[200px]">Project ID: {survey?.project_id || 'Global'}</span>
                  </div>
               </div>
            </div>
@@ -262,7 +264,7 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
 
                <div className="p-8 border-t border-white/5">
                   <button
-                    onClick={() => router.push('/creator/surveys')}
+                    onClick={() => router.push('/creator-surveys')}
                     className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 text-[10px] font-black uppercase tracking-widest"
                   >
                      <ChevronLeft size={16} />
