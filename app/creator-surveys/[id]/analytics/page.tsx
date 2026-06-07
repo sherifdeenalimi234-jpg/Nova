@@ -3,7 +3,7 @@ import { BarChart3, TrendingUp, Users, PieChart } from 'lucide-react';
 
 export default function AnalyticsPlaceholder() {
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
          <div>
             <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Analytics Hub</h2>

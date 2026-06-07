@@ -3,7 +3,7 @@ import { Send, Globe, Link, Mail, QrCode } from 'lucide-react';
 
 export default function CollectPlaceholder() {
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       <header>
          <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Collect Module</h2>
          <p className="text-white/40 text-xs uppercase tracking-widest font-medium">Manage distribution and response streams</p>
