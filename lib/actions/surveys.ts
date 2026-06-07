@@ -103,6 +103,8 @@ export async function createSurveyWorkspace(data: {
     return { success: false, error: error.message };
   }
 
+  console.log("[createSurveyWorkspace] Successfully created survey:", survey.id);
+
   // 3. Activity Feed (Audit Requirement)
   await supabase.from('activity_feed').insert({
     user_id: user.id,
@@ -158,7 +160,14 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
     .order('order_index', { referencedTable: 'questions.options', ascending: true })
     .single();
 
-  if (surveyError) return { error: surveyError };
+  if (surveyError) {
+    console.error("[getSurveyForBuilder] Query Error:", surveyError);
+    return { error: surveyError };
+  }
+
+  console.log("[getSurveyForBuilder] Survey Found:", survey?.id);
+  console.log("[getSurveyForBuilder] Creator:", survey?.creator_id);
+  console.log("[getSurveyForBuilder] Questions:", survey?.questions?.length || 0);
 
   return { data: survey as Survey };
 }
