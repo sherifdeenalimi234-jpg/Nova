@@ -68,7 +68,11 @@ export async function ensureSurveySchema() {
   }
 
   // Notify PostgREST to reload schema cache
-  await supabase.rpc('exec_sql_admin', { sql_query: "NOTIFY pgrst, 'reload schema';" });
+  try {
+    await supabase.rpc('exec_sql_admin', { sql_query: "NOTIFY pgrst, 'reload schema';" });
+  } catch (notifyErr) {
+    console.warn("[SchemaUtility] PostgREST reload notification failed:", notifyErr);
+  }
 
   return {
     success: errors.length === 0,

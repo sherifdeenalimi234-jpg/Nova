@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Survey } from '@/lib/types/surveys';
+import { useRouter } from 'next/navigation';
 
 interface SurveyCardProps {
   survey: Survey;
@@ -59,9 +60,11 @@ export default function SurveyCard({
     });
   };
 
+  const router = useRouter();
+
   return (
     <div
-      onClick={() => onEdit(survey.id)}
+      onClick={() => router.push(`/creator-surveys/${survey.id}`)}
       className="relative p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:border-white/10 transition-all cursor-pointer"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
@@ -98,7 +101,7 @@ export default function SurveyCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 lg:gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 lg:gap-3 relative z-20" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={(e) => { e.stopPropagation(); onPreview(survey.id); }}
             className="hidden lg:flex p-3 rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
@@ -108,7 +111,7 @@ export default function SurveyCard({
           </button>
 
           <button
-            onClick={(e) => { e.stopPropagation(); onEdit(survey.id); }}
+            onClick={(e) => { e.stopPropagation(); router.push(`/creator-surveys/${survey.id}`); }}
             className="flex-1 lg:flex-none px-5 py-3 rounded-xl lg:rounded-2xl bg-white/5 border border-white/5 text-[9px] lg:text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
             <Edit3 size={13} />
@@ -117,7 +120,7 @@ export default function SurveyCard({
 
           <div className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(!showMenu); }}
               className="p-3 rounded-xl lg:rounded-2xl bg-white/5 border border-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"
             >
               <MoreVertical size={16} />

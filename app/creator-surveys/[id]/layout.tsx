@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import WorkspaceShell from './WorkspaceShell';
 import WorkspaceErrorState from '@/components/surveys/WorkspaceErrorState';
 
+export const dynamic = 'force-dynamic';
+
 export default async function WorkspaceLayout({
   children,
   params

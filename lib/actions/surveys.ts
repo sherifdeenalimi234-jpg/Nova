@@ -162,8 +162,7 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
 
     if (!user) return { error: { message: "Authentication required.", code: 'AUTH_REQUIRED' } };
 
-    // 1. Fetch base survey record
-    // We try to get all columns, but if it fails due to schema, we fallback
+    // 1. Primary Fetch Attempt (Full Schema)
     let { data: survey, error: surveyError } = await supabase
       .from('surveys')
       .select('*')
@@ -171,12 +170,11 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
       .eq('creator_id', user.id)
       .single();
 
+    // 2. Schema Fallback (If columns missing)
     if (surveyError) {
-      console.error("[getSurveyForBuilder] Base survey fetch failed:", surveyError);
-
       const isSchemaError = surveyError.code === '42703' || surveyError.message?.includes('column');
       if (isSchemaError) {
-        // Retry with minimal columns
+        console.warn("[getSurveyForBuilder] Schema mismatch detected, falling back to core fields...");
         const fallback = await supabase
           .from('surveys')
           .select('id, creator_id, title, status, created_at, updated_at')
@@ -187,42 +185,56 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
         if (fallback.error) return { error: fallback.error };
         survey = {
           ...fallback.data,
-          research_objective: "Schema mismatch detected.",
-          visibility: 'Private'
+          research_objective: "Schema Sync Required.",
+          visibility: 'Private',
+          survey_mode: 'Standard',
+          target_audience: 'N/A',
+          target_responses: '0',
+          tags: []
         };
       } else {
         return { error: surveyError };
       }
     }
 
-    if (!survey) return { error: { message: "Survey not found." } };
+    if (!survey) return { error: { message: "Node not found in intelligence stream.", code: 'NOT_FOUND' } };
 
-    // 2. Fetch questions separately to be more robust
-    const { data: questions, error: qError } = await supabase
-      .from('survey_questions')
-      .select('*, survey_options(*)')
-      .eq('survey_id', surveyId)
-      .order('order_index', { ascending: true });
+    // 3. Question Fetch (Robust Isolation)
+    let questionsData: any[] = [];
+    try {
+      const { data: qData, error: qError } = await supabase
+        .from('survey_questions')
+        .select('*, survey_options(*)')
+        .eq('survey_id', surveyId)
+        .order('order_index', { ascending: true });
 
-    if (qError) {
-      console.warn("[getSurveyForBuilder] Failed to fetch questions:", qError);
+      if (!qError && qData) {
+        questionsData = qData.map((q: any) => ({
+          ...q,
+          options: q.survey_options || []
+        }));
+      }
+    } catch (innerQErr) {
+      console.warn("[getSurveyForBuilder] Questions retrieval failed (non-blocking):", innerQErr);
     }
 
-    // 3. Format and sanitize
-    const formattedSurvey = {
+    // 4. Final Assembler (Absolute Serializability)
+    const result = {
       ...survey,
-      questions: (questions || []).map((q: any) => ({
-        ...q,
-        options: q.survey_options || q.options || []
-      })),
+      questions: questionsData,
       tags: survey.tags || [],
-      settings: survey.settings || { anonymous: false, one_response_per_participant: true }
+      settings: survey.settings || { anonymous: false, one_response_per_participant: true },
+      category: survey.category || 'General',
+      status: survey.status || 'draft'
     };
 
-    return { data: JSON.parse(JSON.stringify(formattedSurvey)) as Survey };
+    // Return a clean POJO with BigInt support
+    return JSON.parse(JSON.stringify({ data: result as Survey }, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
   } catch (err: any) {
-    console.error("[getSurveyForBuilder] Unexpected Error:", err);
-    return { error: { message: err.message || "An unexpected error occurred.", code: 'UNEXPECTED' } };
+    console.error("[getSurveyForBuilder] Critical System Fault:", err);
+    return { error: { message: "Internal Workspace Disruption", code: 'SYSTEM_FAULT' } };
   }
 }
 
@@ -368,7 +380,9 @@ export async function getCreatorSurveys(page: number = 1, pageSize: number = 10)
     response_count: (s as any).response_count?.[0]?.count || 0
   }));
 
-  return JSON.parse(JSON.stringify({ data: formattedData as Survey[], count: count || 0 }));
+  return JSON.parse(JSON.stringify({ data: formattedData as Survey[], count: count || 0 }, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
 }
 
 export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: any }> {
@@ -392,7 +406,9 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
     totalResponses: surveys.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
   };
 
-  return { data: stats };
+  return JSON.parse(JSON.stringify({ data: stats }, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
 }
 
 export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'published' | 'closed') {
