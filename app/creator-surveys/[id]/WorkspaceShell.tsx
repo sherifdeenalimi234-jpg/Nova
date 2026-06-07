@@ -162,12 +162,12 @@ export default function WorkspaceShell({ survey, children }: WorkspaceShellProps
                  <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all" title="Preview">
                     <Eye size={18} />
                  </button>
-                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all lg:hidden">
-                    <Save size={18} />
-                 </button>
                  <button className="hidden lg:flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">
                     <Save size={14} />
                     <span>Save</span>
+                 </button>
+                 <button className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all" title="Share Access">
+                    <Share2 size={18} />
                  </button>
                  <button className="flex items-center justify-center gap-2 px-6 h-10 lg:h-11 rounded-xl bg-nova-purple text-white text-[10px] font-black uppercase tracking-widest hover:shadow-[0_10px_25px_rgba(188,19,254,0.3)] transition-all">
                     <Rocket size={14} />
