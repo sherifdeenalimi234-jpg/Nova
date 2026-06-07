@@ -105,6 +105,9 @@ export default function SurveyBlueprint() {
     });
 
     if (result.success) {
+      if ((result as any).warning) {
+        console.warn("[SurveyBlueprint] Workspace created with warning:", (result as any).warning);
+      }
       router.push(`/creator-surveys/${result.id}`);
     } else {
       alert("Workspace creation failed: " + result.error);

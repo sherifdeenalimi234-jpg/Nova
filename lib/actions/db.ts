@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/constants';
 
 /**
  * Proactively ensures the surveys table has the required blueprint columns.
@@ -19,7 +20,9 @@ export async function ensureSurveySchema() {
     .eq('id', user.id)
     .single();
 
-  if (!profile?.is_admin && user.email !== "sherifdeenalimititilope@gmail.com") {
+  const isAdmin = profile?.is_admin || user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  if (!isAdmin) {
     return { success: false, error: "Admin privilege required for schema repair." };
   }
 
