@@ -75,31 +75,51 @@ export async function createSurveyWorkspace(data: {
   }
 
   // 2. Create Survey Record (Survey Blueprint System V1)
+  // We use a safe mapping to handle potentially missing columns gracefully
+  const insertData: any = {
+    creator_id: user.id,
+    title: data.title,
+    research_objective: data.research_objective,
+    project_id: data.project_id,
+    survey_mode: data.survey_mode,
+    target_audience: data.target_audience,
+    target_responses: data.target_responses,
+    visibility: data.visibility,
+    estimated_duration: data.estimated_duration,
+    research_category: data.research_category,
+    tags: data.tags || [],
+    language: data.language || 'English',
+    research_timeline: data.research_timeline,
+    research_notes: data.research_notes,
+    status: 'draft',
+    questions: [] // Legacy column compatibility
+  };
+
   const { data: survey, error } = await supabase
     .from('surveys')
-    .insert({
-      creator_id: user.id,
-      title: data.title,
-      research_objective: data.research_objective,
-      project_id: data.project_id,
-      survey_mode: data.survey_mode,
-      target_audience: data.target_audience,
-      target_responses: data.target_responses,
-      visibility: data.visibility,
-      estimated_duration: data.estimated_duration,
-      research_category: data.research_category,
-      tags: data.tags || [],
-      language: data.language || 'English',
-      research_timeline: data.research_timeline,
-      research_notes: data.research_notes,
-      status: 'draft',
-      questions: [] // Legacy column compatibility
-    })
+    .insert(insertData)
     .select('id')
     .single();
 
   if (error) {
-    console.error("[createSurveyWorkspace] Error:", error);
+    console.error("[createSurveyWorkspace] Primary Insert Failed:", error);
+
+    // If it's a column missing error, try a fallback to minimal record
+    if (error.code === '42703') {
+       const { data: fallbackSurvey, error: fallbackError } = await supabase
+         .from('surveys')
+         .insert({
+           creator_id: user.id,
+           title: data.title,
+           status: 'draft'
+         })
+         .select('id')
+         .single();
+
+       if (fallbackError) return { success: false, error: fallbackError.message };
+       return { success: true, id: fallbackSurvey.id, warning: "Some blueprint fields could not be saved due to schema mismatch." };
+    }
+
     return { success: false, error: error.message };
   }
 
@@ -126,7 +146,7 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
 
   if (!user) return { error: "Authentication required." };
 
-  // Explicitly list columns to avoid legacy 'questions' column collision
+  // 1. Primary Attempt: Deep fetch with all blueprint columns
   const { data: survey, error: surveyError } = await supabase
     .from('surveys')
     .select(`
@@ -164,16 +184,52 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
     .order('order_index', { referencedTable: 'questions.options', ascending: true })
     .single();
 
-  if (surveyError) {
-    console.error("[getSurveyForBuilder] Query Error:", surveyError);
-    return { error: surveyError };
+  if (!surveyError) {
+    return { data: survey as Survey };
   }
 
-  console.log("[getSurveyForBuilder] Survey Found:", survey?.id);
-  console.log("[getSurveyForBuilder] Creator:", survey?.creator_id);
-  console.log("[getSurveyForBuilder] Questions:", survey?.questions?.length || 0);
+  console.error("[getSurveyForBuilder] Primary Fetch Failed:", surveyError);
 
-  return { data: survey as Survey };
+  // 2. Fallback Attempt: Minimal fetch if blueprint columns are missing (Code 42703)
+  if (surveyError.code === '42703' || surveyError.message?.includes('column')) {
+    console.warn("[getSurveyForBuilder] Retrying with minimal schema fallback...");
+    const { data: fallbackSurvey, error: fallbackError } = await supabase
+      .from('surveys')
+      .select(`
+        id,
+        creator_id,
+        title,
+        description,
+        status,
+        created_at,
+        updated_at,
+        questions:survey_questions(
+          *,
+          options:survey_options(*)
+        )
+      `)
+      .eq('id', surveyId)
+      .eq('creator_id', user.id)
+      .single();
+
+    if (fallbackError) {
+      console.error("[getSurveyForBuilder] Fallback Fetch Failed:", fallbackError);
+      return { error: fallbackError };
+    }
+
+    // Return partial data with defaults to prevent UI crashes
+    return {
+      data: {
+        ...fallbackSurvey,
+        research_objective: "Schema mismatch: Objective not retrieved.",
+        visibility: 'Private',
+        survey_mode: 'Standard Survey',
+        target_audience: 'N/A'
+      } as Survey
+    };
+  }
+
+  return { error: surveyError };
 }
 
 export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {
