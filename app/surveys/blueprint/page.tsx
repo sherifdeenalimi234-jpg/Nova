@@ -105,10 +105,7 @@ export default function SurveyBlueprint() {
     });
 
     if (result.success) {
-      // Small delay to show initialization state
-      setTimeout(() => {
-        router.push(`/creator/surveys/${result.id}`);
-      }, 1500);
+      router.push(`/creator/surveys/${result.id}`);
     } else {
       alert("Workspace creation failed: " + result.error);
       setIsInitializing(false);

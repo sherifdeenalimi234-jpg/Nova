@@ -113,7 +113,6 @@ export async function createSurveyWorkspace(data: {
 
   revalidatePath('/surveys');
   revalidatePath('/creator/surveys');
-  revalidatePath('/surveys/blueprint');
 
   return { success: true, id: survey.id };
 }
@@ -172,7 +171,7 @@ export async function updateSurveyDetails(surveyId: string, updates: Partial<Sur
 
   if (error) return { error };
 
-  revalidatePath(`/creator/surveys/${surveyId}/builder`);
+  revalidatePath(`/creator/surveys/${surveyId}/build`);
   return { data };
 }
 
@@ -360,7 +359,7 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
 
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
-  revalidatePath(`/creator/surveys/${surveyId}/builder`);
+  revalidatePath(`/creator/surveys/${surveyId}/build`);
   return { data };
 }
 
