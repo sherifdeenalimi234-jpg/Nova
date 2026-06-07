@@ -171,7 +171,7 @@ export async function updateSurveyDetails(surveyId: string, updates: Partial<Sur
 
   if (error) return { error };
 
-  revalidatePath(`/creator/surveys/${surveyId}/build`);
+  revalidatePath(`/creator/surveys/${surveyId}/architect`);
   return { data };
 }
 
@@ -359,7 +359,7 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
 
   revalidatePath('/creator/surveys');
   revalidatePath('/creator');
-  revalidatePath(`/creator/surveys/${surveyId}/build`);
+  revalidatePath(`/creator/surveys/${surveyId}/architect`);
   return { data };
 }
 

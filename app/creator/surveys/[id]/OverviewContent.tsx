@@ -29,7 +29,7 @@ export default function OverviewContent({ survey }: { survey: Survey }) {
           <p className="text-white/40 text-xs uppercase tracking-widest mb-6">Established Research Node: {survey.id}</p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link href={`/creator/surveys/${survey.id}/build`} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+            <Link href={`/creator/surveys/${survey.id}/architect`} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
               <div className="w-10 h-10 rounded-xl bg-nova-cyan/20 flex items-center justify-center text-nova-cyan group-hover:scale-110 transition-transform">
                 <Edit3 size={20} />
               </div>

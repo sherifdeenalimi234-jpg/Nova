@@ -18,16 +18,16 @@ The failure occurs due to the interaction between `revalidatePath` and the clien
 
 ## 3. Secondary Issue: Route Mismatch
 Even if the redirect to `/creator/surveys/[id]` succeeds, subsequent navigation within the Workspace Shell is broken:
-- **WorkspaceShell.tsx** links the "Build" tab to `/creator/surveys/[id]/build`.
-- The actual directory is `app/creator/surveys/[id]/builder`.
-- **Legacy Redirect**: `app/creator/surveys/[id]/builder/page.tsx` currently redirects to `/build`, which does not exist, causing a 404 or further redirect loops.
+- **WorkspaceShell.tsx** links the "Build" tab to `/creator/surveys/[id]/architect`.
+- The actual directory is `app/creator/surveys/[id]/architecter`.
+- **Legacy Redirect**: `app/creator/surveys/[id]/architecter/page.tsx` currently redirects to `/architect`, which does not exist, causing a 404 or further redirect loops.
 
 ## 4. Root Cause Summary
 - **Primary**: `revalidatePath('/surveys/blueprint')` in `lib/actions/surveys.ts` interrupts the client-side navigation flow.
-- **Secondary**: Folder naming mismatch (`builder` vs `build`) and incorrect legacy redirects.
+- **Secondary**: Folder naming mismatch (`architecter` vs `architect`) and incorrect legacy redirects.
 
 ## 5. Required Fix
 1. **Action Fix**: Remove `revalidatePath('/surveys/blueprint')` from `createSurveyWorkspace` in `lib/actions/surveys.ts`.
-2. **Directory Sync**: Rename `app/creator/surveys/[id]/builder` to `app/creator/surveys/[id]/build`.
-3. **Page Update**: Modify `app/creator/surveys/[id]/build/page.tsx` to directly render the builder content (using `BuilderClient`) instead of redirecting.
+2. **Directory Sync**: Rename `app/creator/surveys/[id]/architecter` to `app/creator/surveys/[id]/architect`.
+3. **Page Update**: Modify `app/creator/surveys/[id]/architect/page.tsx` to directly render the architecter content (using `BuilderClient`) instead of redirecting.
 4. **Redirection Cleanup**: Remove unnecessary delays in `handleCreate()` that might be susceptible to race conditions.
