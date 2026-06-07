@@ -1,35 +1,33 @@
-# SURVEY WORKSPACE ARCHITECTURE V1
+# Survey Workspace Architecture V1
 
-## 1. Environment Overview
-The Survey Workspace is the central operating system for research projects. It provides a persistent shell containing a high-level header and a contextual navigation system.
+## Overview
+The Survey Workspace is the operating system for the Nova Survey ecosystem. It is a mobile-first, modular environment designed to host all survey-related activities from building to analysis.
 
-## 2. Layout Specification
+## Core Components
 
-### 2.1 Desktop Layout
-- **Header**: Persistent top bar showing Survey Title, Project, Status, Visibility, and Global Actions (Save, Preview, Publish).
-- **Sidebar**: Left-aligned navigation for switching between modules (Overview, Build, Logic, Collect, Analytics, AI Lab, Settings).
-- **Main Canvas**: Centered work area for the active module.
-- **Status Bar**: Bottom bar for system notifications, auto-save status, and versioning info.
+### 1. Workspace Shell (`WorkspaceShell.tsx`)
+- **Parent Container:** Manages the overall layout and navigation state.
+- **Mobile Bottom Nav:** Primary navigation for mobile devices.
+- **Desktop Sidebar:** Primary navigation for desktop devices.
+- **Sticky Actions:** Context-aware buttons (Save, Preview, Publish).
 
-### 2.2 Mobile Layout
-- **Bottom Navigation**: Tab bar for primary modules (Overview, Build, Collect, Analytics, More).
-- **Scrollable Canvas**: Full-width content area.
-- **Safe Area Support**: Full integration with notch and home indicator spacing.
+### 2. Layout Structure
+- **Workspace Header:** Survey/Project names, status, and global actions.
+- **Main Canvas:** The area where specific module content (Build, Analytics, etc.) is rendered.
+- **Right Context Panel:** (Desktop only) Context-aware information or settings.
+- **Status Bar:** Real-time feedback (Auto-save, sync status).
 
-## 3. Module Definitions
+### 3. Navigation Modules
+- **Overview:** Default landing screen.
+- **Build:** Question architect and structure (Placeholder V1).
+- **Logic:** Branching and logic engine (Placeholder V1).
+- **Collect:** Distribution and live survey management.
+- **Analytics:** Data visualization and insights.
+- **AI Lab:** AI-powered research assistance.
+- **Settings:** Survey-specific configurations.
 
-| Module | Purpose | Default |
-|--------|---------|---------|
-| **Overview** | Landing page with research summary and progress. | Yes |
-| **Build** | Question architect and section manager. | No |
-| **Logic** | Visual logic builder and flow manager. | No |
-| **Collect** | Distribution channels and collection status. | No |
-| **Analytics** | Real-time results and AI insights. | No |
-| **AI Lab** | Research assistant and automation tools. | No |
-| **Settings** | Survey-specific configurations and permissions. | No |
-
-## 4. Initialization Logic
-1. **Verification**: Check if the survey ID exists in the `surveys` table.
-2. **Authorization**: Ensure `creator_id` matches `auth.uid()` or the user has a record in `survey_members`.
-3. **State Sync**: Fetch metadata (mode, visibility, target responses) to hydrate the shell.
-4. **Active Tab**: Default to `Overview`.
+## Design Philosophy
+- **Mobile-First:** Every action must be performable on a mobile device without friction.
+- **Glassmorphism:** Modern UI with blurred backgrounds and neon accents.
+- **Instant Feedback:** Auto-save indicators and clear status messaging.
+- **Zero-Latency Feel:** Using Framer Motion for smooth transitions between tabs.

@@ -1,27 +1,48 @@
-# SURVEY WORKSPACE DATABASE REQUIREMENTS
+# Survey Workspace Database Requirements
 
-## 1. Existing Schema Audit
-- **Table**: `public.surveys`
-  - Columns: `id`, `creator_id`, `project_id`, `title`, `description`, `research_objective`, `survey_mode`, `visibility`, `status`, `target_audience`, `target_responses`, `estimated_duration`, `language`, `tags`.
-- **Status**: Sufficient for Phase 2 initialization.
+## Existing Tables Used
 
-## 2. Missing Schema (Future Phases)
-- **`survey_sections`**: Required for multi-page surveys in Build module.
-- **`survey_logic_nodes`**: Required for Logic module.
-- **`survey_members`**: Required for Collaboration features.
-- **`survey_versions`**: Required for Workspace Version Control.
+### `public.surveys`
+- `id` (UUID, Primary Key)
+- `creator_id` (UUID, Foreign Key to profiles)
+- `project_id` (UUID, Foreign Key to projects)
+- `title` (TEXT)
+- `research_objective` (TEXT)
+- `survey_mode` (TEXT)
+- `target_audience` (TEXT)
+- `target_responses` (INTEGER)
+- `visibility` (TEXT)
+- `status` (TEXT: draft, published, closed)
+- `estimated_duration` (TEXT)
+- `research_category` (TEXT)
+- `tags` (TEXT[])
+- `language` (TEXT)
+- `research_timeline` (TEXT)
+- `research_notes` (TEXT)
+- `created_at` (TIMESTAMPTZ)
+- `updated_at` (TIMESTAMPTZ)
 
-## 3. Relationship Requirements
-- `Survey (1) -> Project (1)`: Link to research context (Currently UUID).
-- `Survey (1) -> Creator (1)`: Link to owner (Currently UUID).
+### `public.survey_questions`
+- `id` (UUID, Primary Key)
+- `survey_id` (UUID, Foreign Key)
+- `type` (TEXT)
+- `title` (TEXT)
+- `order_index` (INTEGER)
 
-## 4. Required Data for Workspace V1
-The workspace requires real-time access to the following survey metadata to populate the header and overview:
-- `title`
-- `status`
-- `visibility`
-- `research_objective`
-- `survey_mode`
-- `target_audience`
-- `target_responses`
-- `estimated_duration`
+### `public.survey_responses`
+- `id` (UUID, Primary Key)
+- `survey_id` (UUID, Foreign Key)
+- `responses` (JSONB)
+
+## Missing/Required Columns (To be audited)
+
+- Ensure `visibility` column exists in `public.surveys`.
+- Ensure all blueprint fields (objective, mode, audience, etc.) are correctly mapped in the schema.
+- (Optional) `is_archived` boolean for soft-deletes.
+
+## Relationships
+
+- Survey belongs to a Project.
+- Survey belongs to a Creator (Profile).
+- Survey has many Questions.
+- Survey has many Responses.

@@ -1,43 +1,52 @@
 import React from 'react';
-import { Send, Globe, Link, Mail, QrCode } from 'lucide-react';
+import { Construction, Send, BarChart3, Globe, Share2 } from 'lucide-react';
 
 export default function CollectPlaceholder() {
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="min-h-[60vh] space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header>
-         <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Collect Module</h2>
-         <p className="text-white/40 text-xs uppercase tracking-widest font-medium">Manage distribution and response streams</p>
+         <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Collection Hub</h2>
+         <p className="text-white/40 text-[10px] uppercase tracking-[0.4em]">Manage data acquisition and distribution</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         {[
-           { label: 'Public Link', icon: Link, status: 'Active' },
-           { label: 'Email Invite', icon: Mail, status: 'Ready' },
-           { label: 'QR Code', icon: QrCode, status: 'Ready' },
-           { label: 'Web Embed', icon: Globe, status: 'Locked' },
-         ].map((item, idx) => (
-           <div key={idx} className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/40">
-                 <item.icon size={24} />
-              </div>
-              <div>
-                 <h3 className="text-sm font-bold mb-1">{item.label}</h3>
-                 <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${
-                   item.status === 'Active' ? 'bg-nova-green/10 border-nova-green text-nova-green' : 'bg-white/5 border-white/10 text-white/20'
-                 }`}>
-                   {item.status.toUpperCase()}
-                 </span>
-              </div>
-           </div>
-         ))}
-      </div>
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-6">
+            <div className="flex items-center justify-between">
+               <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40">Distribution Status</h3>
+               <span className="px-3 py-1 rounded-full bg-nova-cyan/10 text-nova-cyan text-[8px] font-black">WAITING</span>
+            </div>
+            <div className="py-20 flex flex-col items-center text-center">
+               <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center text-white/10 mb-6">
+                  <Globe size={32} />
+               </div>
+               <p className="text-xs text-white/20 uppercase tracking-widest">No active distribution channels</p>
+            </div>
+         </div>
 
-      <div className="p-12 rounded-[3rem] border border-dashed border-white/10 bg-white/[0.01] text-center">
-         <Send size={48} className="mx-auto text-white/10 mb-6" />
-         <h3 className="text-xl font-black uppercase tracking-tight mb-2">Distribution Hub Initializing</h3>
-         <p className="text-white/30 text-xs uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
-           Connect your research node to global data streams in the next deployment.
-         </p>
+         <div className="space-y-6">
+            <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5">
+               <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-6">Quick Stats</h3>
+               <div className="space-y-4">
+                  <div className="flex justify-between">
+                     <span className="text-[9px] text-white/20 uppercase font-black">Responses</span>
+                     <span className="text-[9px] font-black">0</span>
+                  </div>
+                  <div className="flex justify-between">
+                     <span className="text-[9px] text-white/20 uppercase font-black">Live Nodes</span>
+                     <span className="text-[9px] font-black">0</span>
+                  </div>
+               </div>
+            </div>
+            <button className="w-full p-6 rounded-[2rem] bg-nova-purple flex items-center justify-center gap-3 opacity-50 cursor-not-allowed">
+               <Share2 size={16} />
+               <span className="text-[10px] font-black uppercase tracking-widest">Distribute Survey</span>
+            </button>
+         </div>
+      </section>
+
+      <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 w-fit">
+        <Construction size={16} className="text-nova-cyan animate-pulse" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Collection Module In development</span>
       </div>
     </div>
   );

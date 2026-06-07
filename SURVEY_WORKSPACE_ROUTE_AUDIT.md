@@ -1,27 +1,26 @@
-# SURVEY WORKSPACE ROUTE AUDIT
+# Survey Workspace Route Audit
 
-## 1. Active Routes
-| Route | Purpose | Status |
-|-------|---------|--------|
-| `/surveys/blueprint` | Survey Initialization Layer | Active (V1) |
-| `/creator/surveys` | Creator Dashboard | Active |
-| `/creator/surveys/[id]/builder` | Legacy Question Builder | Active (To be integrated) |
+## Official Routes (Phase 1B)
 
-## 2. New Workspace Architecture Routes
-| Route | Purpose | Action |
-|-------|---------|--------|
-| `/creator/surveys/[id]` | Workspace Overview | **TO BE CREATED** |
-| `/creator/surveys/[id]/build` | Question Builder Module | **TO BE CREATED** |
-| `/creator/surveys/[id]/logic` | Logic Engine Module | **TO BE CREATED** |
-| `/creator/surveys/[id]/collect` | Data Collection Module | **TO BE CREATED** |
-| `/creator/surveys/[id]/analytics` | Analytics Module | **TO BE CREATED** |
-| `/creator/surveys/[id]/ai-lab` | AI Intelligence Module | **TO BE CREATED** |
-| `/creator/surveys/[id]/settings` | Workspace Settings | **TO BE CREATED** |
+- `/creator-surveys`: Library and management hub.
+- `/creator-surveys/blueprint`: Initialization flow.
+- `/creator-surveys/[id]`: Workspace root (Overview).
+- `/creator-surveys/[id]/build`: Question builder.
+- `/creator-surveys/[id]/logic`: Logic engine.
+- `/creator-surveys/[id]/collect`: Collection hub.
+- `/creator-surveys/[id]/analytics`: Data center.
+- `/creator-surveys/[id]/ai-lab`: AI assistant.
+- `/creator-surveys/[id]/settings`: Configuration.
 
-## 3. Redirection Rules
-- Redirect `/creator/surveys/new` → `/surveys/blueprint` (Implemented).
-- Redirect Blueprint Success → `/creator/surveys/[id]` (Workspace Home).
-- Unauthorized access to `/creator/*` → `/feed` or `/`.
+## Deprecated/Legacy Routes
 
-## 4. Observations
-The current redirect in `blueprint/page.tsx` to `/builder` skips the intended Workspace Shell. By introducing a layout at `/creator/surveys/[id]/layout.tsx`, we can encapsulate all modules within the shell.
+- `/creator-surveys/new`: Redirects to blueprint.
+- `/creator-surveys/[id]/architect`: Renamed to `/build` (Standardized).
+- Legacy routes under `/creator/surveys` (if any) are retired.
+
+## Redirect Rules
+
+1. **Guest Access:** Redirect to `/`.
+2. **Post-Creation:** Redirect from `/blueprint` to `/creator-surveys/[id]`.
+3. **Internal Exit:** "Exit Workspace" returns to `/creator-surveys`.
+4. **Invalid Survey:** Redirect to `/creator-surveys`.
