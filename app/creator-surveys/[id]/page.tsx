@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  console.log("[WorkspacePage] Loading workspace for ID:", id);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

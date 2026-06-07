@@ -38,7 +38,7 @@ export default function SurveyCard({
   const [showMenu, setShowMenu] = useState(false);
   const responseCount = (survey as any).response_count || 0;
 
-  const statusConfig = {
+  const statusConfig: Record<string, { color: string; label: string }> = {
     draft: { color: 'bg-nova-orange/10 text-nova-orange', label: 'Draft' },
     published: { color: 'bg-nova-green/10 text-nova-green', label: 'Live' },
     closed: { color: 'bg-white/5 text-white/40', label: 'Closed' }
@@ -57,8 +57,8 @@ export default function SurveyCard({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
         <div className="flex-1 space-y-2 lg:space-y-3">
           <div className="flex items-center gap-2 lg:gap-3">
-            <span className={`px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full text-[7px] lg:text-[8px] font-black uppercase tracking-widest ${statusConfig[survey.status].color}`}>
-              {statusConfig[survey.status].label}
+            <span className={`px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full text-[7px] lg:text-[8px] font-black uppercase tracking-widest ${statusConfig[survey.status]?.color || 'bg-white/5 text-white/40'}`}>
+              {statusConfig[survey.status]?.label || survey.status}
             </span>
             <span className="text-[8px] lg:text-[9px] font-black uppercase tracking-widest text-white/20 flex items-center gap-1">
               <Calendar size={9} />

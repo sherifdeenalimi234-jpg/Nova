@@ -43,6 +43,27 @@ const navItems = [
 
 export default function WorkspaceShell({ survey, children }: WorkspaceShellProps) {
   const pathname = usePathname();
+
+  if (!survey) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto">
+            <X size={32} />
+          </div>
+          <h2 className="text-xl font-bold uppercase tracking-tight">Workspace Error</h2>
+          <p className="text-white/40 text-xs uppercase tracking-widest">Survey data stream not found</p>
+          <button
+            onClick={() => window.location.href = '/creator-surveys'}
+            className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest"
+          >
+            Return to Hub
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
