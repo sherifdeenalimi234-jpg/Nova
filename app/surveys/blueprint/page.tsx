@@ -88,7 +88,7 @@ export default function SurveyBlueprint() {
 
   const handleCreate = async () => {
     // Basic validation
-    const required = ['title', 'research_objective', 'survey_mode', 'target_audience', 'target_responses', 'visibility'];
+    const required = ['title', 'research_objective', 'project_id', 'survey_mode', 'target_audience', 'target_responses', 'visibility'];
     for (const field of required) {
       if (!formData[field as keyof typeof formData]) {
         alert(`${field.replace('_', ' ')} is required.`);
@@ -107,7 +107,7 @@ export default function SurveyBlueprint() {
     if (result.success) {
       // Small delay to show initialization state
       setTimeout(() => {
-        router.push(`/creator/surveys/${result.id}/builder`);
+        router.push(`/creator/surveys/${result.id}`);
       }, 1500);
     } else {
       alert("Workspace creation failed: " + result.error);
