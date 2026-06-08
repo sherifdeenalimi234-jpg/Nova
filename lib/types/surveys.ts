@@ -1,5 +1,14 @@
 export type SurveyStatus = 'draft' | 'published' | 'closed';
-export type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'dropdown' | 'rating';
+export type QuestionType =
+  | 'short_text'
+  | 'long_text'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'dropdown'
+  | 'rating'
+  | 'yes_no'
+  | 'date'
+  | 'number';
 
 export interface SurveySettings {
   anonymous: boolean;
@@ -48,13 +57,27 @@ export interface Survey {
   created_at: string;
   updated_at: string;
   // Join data
+  sections?: SurveySection[];
   questions?: SurveyQuestion[];
   response_count?: number;
+}
+
+export interface SurveySection {
+  id: string;
+  survey_id: string;
+  title: string;
+  description: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+  // Join data
+  questions?: SurveyQuestion[];
 }
 
 export interface SurveyQuestion {
   id: string;
   survey_id: string;
+  section_id: string | null;
   type: QuestionType;
   title: string;
   description: string | null;
