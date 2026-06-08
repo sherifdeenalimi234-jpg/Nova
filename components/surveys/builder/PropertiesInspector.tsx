@@ -12,10 +12,19 @@ import {
   Lock,
   Zap,
   Layout,
-  Type
+  Type,
+  CheckCircle2,
+  List,
+  Star,
+  Calendar,
+  ToggleLeft,
+  ChevronDown,
+  Hash,
+  Plus,
+  Layers
 } from 'lucide-react';
 
-import { saveQuestion, saveSection, deleteQuestion, deleteSection } from '@/lib/actions/surveys';
+import { saveQuestion, saveSection, deleteQuestion, deleteSection, saveOption, deleteOption } from '@/lib/actions/surveys';
 
 interface PropertiesInspectorProps {
   survey: Survey;
@@ -57,6 +66,46 @@ export default function PropertiesInspector({
   const handleToggleRequired = async () => {
     if (selectedQuestion) {
       onUpdate('question', selectedQuestion.id, { is_required: !selectedQuestion.is_required });
+    }
+  };
+
+  const handleTypeChange = async (type: string) => {
+    if (selectedQuestion) {
+      onUpdate('question', selectedQuestion.id, { type });
+    }
+  };
+
+  const handleAddOption = async () => {
+    if (selectedQuestion) {
+      const newOption = {
+        question_id: selectedQuestion.id,
+        text: `Option ${(selectedQuestion.options || []).length + 1}`,
+        order_index: (selectedQuestion.options || []).length
+      };
+      const result = await saveOption(selectedQuestion.id, newOption);
+      if (result.data) {
+        onUpdate('question', selectedQuestion.id, {
+          options: [...(selectedQuestion.options || []), result.data]
+        });
+      }
+    }
+  };
+
+  const handleUpdateOption = async (optionId: string, text: string) => {
+    if (selectedQuestion) {
+      await saveOption(selectedQuestion.id, { id: optionId, text });
+      onUpdate('question', selectedQuestion.id, {
+        options: selectedQuestion.options?.map(o => o.id === optionId ? { ...o, text } : o)
+      });
+    }
+  };
+
+  const handleDeleteOption = async (optionId: string) => {
+    if (selectedQuestion) {
+      await deleteOption(selectedQuestion.id, optionId);
+      onUpdate('question', selectedQuestion.id, {
+        options: selectedQuestion.options?.filter(o => o.id !== optionId)
+      });
     }
   };
 
@@ -176,19 +225,68 @@ export default function PropertiesInspector({
               </div>
             </div>
 
-            {/* Question Configuration (Type Specific - Placeholder) */}
+            {/* Question Type Selection */}
             <div className="space-y-4">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Type Configuration</label>
-              <div className="p-6 rounded-[2rem] border border-white/5 bg-nova-cyan/5 text-nova-cyan space-y-2">
-                 <div className="flex items-center gap-2">
-                    <Zap size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Type-Specific Settings</span>
-                 </div>
-                 <p className="text-[9px] font-medium leading-relaxed opacity-60">
-                   Configuration for {selectedQuestion.type.replace('_', ' ')} will appear here in the next update.
-                 </p>
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Question Type</label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { id: 'short_text', label: 'Short Text', icon: Type },
+                  { id: 'long_text', label: 'Long Text', icon: List },
+                  { id: 'single_choice', label: 'Single Choice', icon: CheckCircle2 },
+                  { id: 'multiple_choice', label: 'Multiple Choice', icon: Layers },
+                  { id: 'dropdown', label: 'Dropdown', icon: ChevronDown },
+                  { id: 'rating', label: 'Rating', icon: Star },
+                  { id: 'yes_no', label: 'Yes / No', icon: ToggleLeft },
+                  { id: 'date', label: 'Date', icon: Calendar },
+                  { id: 'number', label: 'Number', icon: Hash }
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => handleTypeChange(type.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      selectedQuestion.type === type.id
+                      ? 'bg-nova-purple/20 border-nova-purple text-white'
+                      : 'bg-white/[0.03] border-white/5 text-white/40 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <type.icon size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
+
+            {/* Options Management (for Choice types) */}
+            {['single_choice', 'multiple_choice', 'dropdown'].includes(selectedQuestion.type) && (
+              <div className="space-y-4">
+                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Options</label>
+                <div className="space-y-2">
+                  {selectedQuestion.options?.map((opt, idx) => (
+                    <div key={opt.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={opt.text}
+                        onChange={(e) => handleUpdateOption(opt.id, e.target.value)}
+                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2 text-[11px] focus:outline-none focus:border-nova-purple/50"
+                      />
+                      <button
+                        onClick={() => handleDeleteOption(opt.id)}
+                        className="p-2 text-white/20 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleAddOption}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-white/10 text-white/20 hover:text-white/40 transition-all"
+                  >
+                    <Plus size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Add Option</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
