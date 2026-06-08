@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Survey, SurveyQuestion, SurveySection } from '@/lib/types/surveys';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Survey, SurveyQuestion, SurveySection, QuestionType, SurveyOption } from '@/lib/types/surveys';
 import {
   Settings2,
   Info,
@@ -12,10 +12,20 @@ import {
   Lock,
   Zap,
   Layout,
-  Type
+  Type,
+  AlignLeft,
+  CircleDot,
+  CheckSquare,
+  List,
+  Star,
+  Plus,
+  X,
+  ChevronDown,
+  Calendar,
+  ToggleLeft,
+  Hash
 } from 'lucide-react';
-
-import { saveQuestion, saveSection, deleteQuestion, deleteSection } from '@/lib/actions/surveys';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PropertiesInspectorProps {
   survey: Survey;
@@ -23,48 +33,115 @@ interface PropertiesInspectorProps {
   selectedSectionId: string | null;
   onUpdate: (type: 'question' | 'section', id: string, updates: any) => void;
   onDelete: (type: 'question' | 'section', id: string) => void;
+  onDuplicate: (type: 'question' | 'section', id: string) => void;
+  onAddOption: (questionId: string) => void;
+  onUpdateOption: (questionId: string, optionId: string, text: string) => void;
+  onDeleteOption: (questionId: string, optionId: string) => void;
 }
+
+const QUESTION_TYPES: { type: QuestionType; label: string; icon: any }[] = [
+  { type: 'short_text', label: 'Short Text', icon: Type },
+  { type: 'long_text', label: 'Long Text', icon: AlignLeft },
+  { type: 'single_choice', label: 'Single Choice', icon: CircleDot },
+  { type: 'multiple_choice', label: 'Multiple Choice', icon: CheckSquare },
+  { type: 'dropdown', label: 'Dropdown', icon: List },
+  { type: 'rating', label: 'Rating', icon: Star },
+  { type: 'yes_no', label: 'Yes/No', icon: ToggleLeft },
+  { type: 'date', label: 'Date', icon: Calendar },
+  { type: 'number', label: 'Number', icon: Hash },
+];
 
 export default function PropertiesInspector({
   survey,
   selectedQuestionId,
   selectedSectionId,
   onUpdate,
-  onDelete
+  onDelete,
+  onDuplicate,
+  onAddOption,
+  onUpdateOption,
+  onDeleteOption
 }: PropertiesInspectorProps) {
+
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
 
   const selectedQuestion = survey.questions?.find(q => q.id === selectedQuestionId);
   const selectedSection = survey.sections?.find(s => s.id === selectedSectionId);
 
-  const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Local state for debounced inputs
+  const [localTitle, setLocalTitle] = useState('');
+  const [localDescription, setLocalDescription] = useState('');
+  const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const descDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalTitle(selectedQuestion?.title || selectedSection?.title || '');
+    setLocalDescription(selectedQuestion?.description || selectedSection?.description || '');
+  }, [selectedQuestionId, selectedSectionId]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (selectedQuestion) {
-      onUpdate('question', selectedQuestion.id, { title: value });
-    } else if (selectedSection) {
-      onUpdate('section', selectedSection.id, { title: value });
-    }
+    setLocalTitle(value);
+
+    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    titleDebounceRef.current = setTimeout(() => {
+        if (selectedQuestion) {
+            onUpdate('question', selectedQuestion.id, { title: value });
+        } else if (selectedSection) {
+            onUpdate('section', selectedSection.id, { title: value });
+        }
+    }, 500);
   };
 
-  const handleDescriptionChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    if (selectedQuestion) {
-      onUpdate('question', selectedQuestion.id, { description: value });
-    } else if (selectedSection) {
-      onUpdate('section', selectedSection.id, { description: value });
-    }
+    setLocalDescription(value);
+
+    if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
+    descDebounceRef.current = setTimeout(() => {
+        if (selectedQuestion) {
+            onUpdate('question', selectedQuestion.id, { description: value });
+        } else if (selectedSection) {
+            onUpdate('section', selectedSection.id, { description: value });
+        }
+    }, 500);
   };
 
-  const handleToggleRequired = async () => {
+  const handleToggleRequired = () => {
     if (selectedQuestion) {
       onUpdate('question', selectedQuestion.id, { is_required: !selectedQuestion.is_required });
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (selectedQuestion) {
       onDelete('question', selectedQuestion.id);
     } else if (selectedSection) {
       onDelete('section', selectedSection.id);
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (selectedQuestion) {
+      onDuplicate('question', selectedQuestion.id);
+    } else if (selectedSection) {
+      onDuplicate('section', selectedSection.id);
+    }
+  };
+
+  const handleTypeChange = (type: QuestionType) => {
+    if (selectedQuestion) {
+      onUpdate('question', selectedQuestion.id, { type });
+      setShowTypeSelector(false);
+    }
+  };
+
+  const handleValidationRuleChange = (key: string, value: any) => {
+    if (selectedQuestion) {
+      const currentRules = selectedQuestion.validation_rules || {};
+      onUpdate('question', selectedQuestion.id, {
+        validation_rules: { ...currentRules, [key]: value }
+      });
     }
   };
 
@@ -103,7 +180,10 @@ export default function PropertiesInspector({
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all">
+          <button
+            onClick={handleDuplicate}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
+          >
             <Copy size={12} />
             <span>Duplicate</span>
           </button>
@@ -120,6 +200,54 @@ export default function PropertiesInspector({
       {/* Main Settings Form */}
       <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
 
+        {/* Question Type Selector (Question only) */}
+        {selectedQuestion && (
+          <div className="space-y-4">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Structure</label>
+            <div className="relative">
+              <button
+                onClick={() => setShowTypeSelector(!showTypeSelector)}
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all"
+              >
+                <div className="flex items-center gap-3 text-white/60">
+                  {QUESTION_TYPES.find(t => t.type === selectedQuestion.type)?.icon({ size: 16 })}
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {QUESTION_TYPES.find(t => t.type === selectedQuestion.type)?.label}
+                  </span>
+                </div>
+                <ChevronDown size={14} className="text-white/20" />
+              </button>
+
+              <AnimatePresence>
+                {showTypeSelector && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowTypeSelector(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl z-20 py-2 overflow-hidden"
+                    >
+                      {QUESTION_TYPES.map((t) => (
+                        <button
+                          key={t.type}
+                          onClick={() => handleTypeChange(t.type)}
+                          className={`w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-white/5 transition-colors ${
+                            selectedQuestion.type === t.type ? 'text-nova-cyan bg-nova-cyan/5' : 'text-white/60'
+                          }`}
+                        >
+                          <t.icon size={14} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{t.label}</span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+
         {/* Title & Description */}
         <div className="space-y-4">
           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Identification</label>
@@ -128,7 +256,7 @@ export default function PropertiesInspector({
                 <span className="text-[8px] font-black uppercase text-white/20 pl-4">Title</span>
                 <input
                   type="text"
-                  value={selectedQuestion?.title || selectedSection?.title || ''}
+                  value={localTitle}
                   onChange={handleTitleChange}
                   placeholder="Enter title..."
                   className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs font-medium focus:outline-none focus:border-nova-purple/50 transition-all placeholder:text-white/10"
@@ -138,7 +266,7 @@ export default function PropertiesInspector({
                 <span className="text-[8px] font-black uppercase text-white/20 pl-4">Description</span>
                 <textarea
                   rows={3}
-                  value={selectedQuestion?.description || selectedSection?.description || ''}
+                  value={localDescription}
                   onChange={handleDescriptionChange}
                   placeholder="Additional context (optional)..."
                   className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs font-medium focus:outline-none focus:border-nova-purple/50 transition-all resize-none placeholder:text-white/10"
@@ -149,6 +277,39 @@ export default function PropertiesInspector({
 
         {selectedQuestion && (
           <>
+            {/* Options Management (Choice Questions) */}
+            {['single_choice', 'multiple_choice', 'dropdown'].includes(selectedQuestion.type) && (
+              <div className="space-y-4">
+                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Options</label>
+                <div className="space-y-2">
+                  {(selectedQuestion.options || []).map((option) => (
+                    <div key={option.id} className="flex items-center gap-2 group/opt">
+                      <input
+                        type="text"
+                        value={option.text}
+                        onChange={(e) => onUpdateOption(selectedQuestion.id, option.id, e.target.value)}
+                        placeholder="Option text..."
+                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-[11px] font-medium focus:outline-none focus:border-nova-cyan/50 transition-all"
+                      />
+                      <button
+                        onClick={() => onDeleteOption(selectedQuestion.id, option.id)}
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/10 text-white/20 hover:text-red-500 transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => onAddOption(selectedQuestion.id)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 text-white/40 hover:text-white hover:border-white/20 transition-all"
+                  >
+                    <Plus size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Add Option</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Logic & Validation */}
             <div className="space-y-4">
               <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Logic & Validation</label>
@@ -166,27 +327,79 @@ export default function PropertiesInspector({
                     </div>
                  </div>
 
-                 <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all group">
-                    <div className="flex items-center gap-3">
-                       <Zap size={14} className="text-white/20 group-hover:text-nova-cyan transition-colors" />
-                       <span className="text-[10px] font-black uppercase tracking-widest">Add Logic Jump</span>
+                 {/* Validation Rules */}
+                 <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 space-y-4">
+                    <div className="flex items-center gap-2 text-nova-cyan opacity-40">
+                       <Zap size={12} />
+                       <span className="text-[8px] font-black uppercase tracking-widest">Validation Rules</span>
                     </div>
-                    <Info size={14} className="text-white/10" />
-                 </button>
-              </div>
-            </div>
 
-            {/* Question Configuration (Type Specific - Placeholder) */}
-            <div className="space-y-4">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 px-1">Type Configuration</label>
-              <div className="p-6 rounded-[2rem] border border-white/5 bg-nova-cyan/5 text-nova-cyan space-y-2">
-                 <div className="flex items-center gap-2">
-                    <Zap size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Type-Specific Settings</span>
+                    {['short_text', 'long_text'].includes(selectedQuestion.type) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <span className="text-[8px] font-black text-white/20 ml-2">Min Char</span>
+                          <input
+                            type="number"
+                            value={selectedQuestion.validation_rules?.min_length || ''}
+                            onChange={(e) => handleValidationRuleChange('min_length', parseInt(e.target.value) || 0)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-white focus:outline-none focus:border-nova-cyan/30 transition-all"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="text-[8px] font-black text-white/20 ml-2">Max Char</span>
+                          <input
+                            type="number"
+                            value={selectedQuestion.validation_rules?.max_length || ''}
+                            onChange={(e) => handleValidationRuleChange('max_length', parseInt(e.target.value) || 0)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-white focus:outline-none focus:border-nova-cyan/30 transition-all"
+                            placeholder="Unlimited"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedQuestion.type === 'rating' && (
+                      <div className="space-y-1.5">
+                        <span className="text-[8px] font-black text-white/20 ml-2">Scale (Max)</span>
+                        <select
+                          value={selectedQuestion.validation_rules?.max_rating || 5}
+                          onChange={(e) => handleValidationRuleChange('max_rating', parseInt(e.target.value))}
+                          className="w-full bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-white/60 outline-none"
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedQuestion.type === 'number' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <span className="text-[8px] font-black text-white/20 ml-2">Min Value</span>
+                          <input
+                            type="number"
+                            value={selectedQuestion.validation_rules?.min_value || ''}
+                            onChange={(e) => handleValidationRuleChange('min_value', parseFloat(e.target.value) || 0)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-white focus:outline-none focus:border-nova-cyan/30 transition-all"
+                            placeholder="Min"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="text-[8px] font-black text-white/20 ml-2">Max Value</span>
+                          <input
+                            type="number"
+                            value={selectedQuestion.validation_rules?.max_value || ''}
+                            onChange={(e) => handleValidationRuleChange('max_value', parseFloat(e.target.value) || 0)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-white focus:outline-none focus:border-nova-cyan/30 transition-all"
+                            placeholder="Max"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[8px] text-white/20 uppercase font-bold text-center">Advanced rules coming soon</p>
                  </div>
-                 <p className="text-[9px] font-medium leading-relaxed opacity-60">
-                   Configuration for {selectedQuestion.type.replace('_', ' ')} will appear here in the next update.
-                 </p>
               </div>
             </div>
           </>
