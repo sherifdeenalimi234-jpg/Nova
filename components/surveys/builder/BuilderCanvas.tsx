@@ -9,9 +9,19 @@ interface BuilderCanvasProps {
   survey: Survey;
   selectedQuestionId: string | null;
   onSelectQuestion: (id: string) => void;
+  onUpdateQuestion: (id: string, updates: any) => void;
+  onDeleteQuestion: (id: string) => void;
+  onAddQuestion: (sectionId: string | null) => void;
 }
 
-export default function BuilderCanvas({ survey, selectedQuestionId, onSelectQuestion }: BuilderCanvasProps) {
+export default function BuilderCanvas({
+  survey,
+  selectedQuestionId,
+  onSelectQuestion,
+  onUpdateQuestion,
+  onDeleteQuestion,
+  onAddQuestion
+}: BuilderCanvasProps) {
   return (
     <div className="min-h-full flex flex-col">
       {/* Canvas Header */}
@@ -47,6 +57,9 @@ export default function BuilderCanvas({ survey, selectedQuestionId, onSelectQues
           <QuestionList
             surveyId={survey.id}
             initialQuestions={survey.questions || []}
+            onUpdateQuestion={onUpdateQuestion}
+            onDeleteQuestion={onDeleteQuestion}
+            onAddQuestion={onAddQuestion}
           />
         </div>
       </div>

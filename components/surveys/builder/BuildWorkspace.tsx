@@ -6,7 +6,7 @@ import StructurePanel from './StructurePanel';
 import BuilderCanvas from './BuilderCanvas';
 import PropertiesInspector from './PropertiesInspector';
 import { motion, AnimatePresence } from 'framer-motion';
-import { saveQuestion, deleteQuestion, saveSection, deleteSection } from '@/lib/actions/surveys';
+import { saveQuestion, deleteQuestion, saveSection, deleteSection, reorderSections } from '@/lib/actions/surveys';
 import {
   ChevronLeft,
   ChevronRight,
@@ -33,6 +33,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
@@ -68,6 +69,24 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     setSelectedSectionId(null);
     if (window.innerWidth < 1280) {
       setActiveMode('inspector');
+    }
+  };
+
+  const handleReorderSections = async (sectionIds: string[]) => {
+    setIsSaving(true);
+    setSurvey(prev => ({
+      ...prev,
+      sections: sectionIds.map(id => prev.sections?.find(s => s.id === id)!)
+    }));
+
+    try {
+      const result = await reorderSections(survey.id, sectionIds);
+      if (result.error) throw result.error;
+      setLastSaved(new Date());
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to reorder sections");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -110,6 +129,61 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       setLastSaved(new Date());
     } catch (err: any) {
       setSaveError(err.message || "Failed to save changes");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddSection = async () => {
+    setIsSaving(true);
+    const newSection: Partial<SurveySection> = {
+      survey_id: survey.id,
+      title: 'Untitled Section',
+      order_index: (survey.sections || []).length
+    };
+
+    try {
+      const result = await saveSection(survey.id, newSection);
+      if (result.error) throw result.error;
+
+      const savedSection = result.data as SurveySection;
+      setSurvey(prev => ({
+        ...prev,
+        sections: [...(prev.sections || []), savedSection]
+      }));
+      handleSelectSection(savedSection.id);
+      setLastSaved(new Date());
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to add section");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddQuestion = async (sectionId: string | null = null) => {
+    setIsSaving(true);
+    const newQuestion: Partial<SurveyQuestion> = {
+      survey_id: survey.id,
+      section_id: sectionId,
+      type: 'short_text',
+      title: '',
+      is_required: true,
+      order_index: (survey.questions || []).length
+    };
+
+    try {
+      const result = await saveQuestion(survey.id, newQuestion);
+      if (result.error) throw result.error;
+
+      const savedQuestion = result.data as SurveyQuestion;
+      setSurvey(prev => ({
+        ...prev,
+        questions: [...(prev.questions || []), savedQuestion]
+      }));
+      handleSelectQuestion(savedQuestion.id);
+      setLastSaved(new Date());
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to add question");
     } finally {
       setIsSaving(false);
     }
@@ -186,7 +260,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
         </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden gap-4">
+      <div className="flex-1 flex overflow-hidden gap-0 md:gap-4">
 
         {/* Left Panel: Structure */}
         <motion.aside
@@ -205,6 +279,9 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
               selectedSectionId={selectedSectionId}
               onSelectQuestion={handleSelectQuestion}
               onSelectSection={handleSelectSection}
+              onAddSection={handleAddSection}
+              onAddQuestionToSection={handleAddQuestion}
+              onReorderSections={handleReorderSections}
             />
           </div>
         </motion.aside>
@@ -216,6 +293,9 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
                survey={survey}
                onSelectQuestion={handleSelectQuestion}
                selectedQuestionId={selectedQuestionId}
+               onUpdateQuestion={(id, updates) => handleUpdateItem('question', id, updates)}
+               onDeleteQuestion={(id) => handleDeleteItem('question', id)}
+               onAddQuestion={handleAddQuestion}
              />
           </div>
         </main>
@@ -258,6 +338,9 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
                   selectedSectionId={selectedSectionId}
                   onSelectQuestion={handleSelectQuestion}
                   onSelectSection={handleSelectSection}
+                  onAddSection={handleAddSection}
+                  onAddQuestionToSection={handleAddQuestion}
+                  onReorderSections={handleReorderSections}
                 />
               </motion.div>
             )}
@@ -273,6 +356,9 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
                   survey={survey}
                   onSelectQuestion={handleSelectQuestion}
                   selectedQuestionId={selectedQuestionId}
+                  onUpdateQuestion={(id, updates) => handleUpdateItem('question', id, updates)}
+                  onDeleteQuestion={(id) => handleDeleteItem('question', id)}
+                  onAddQuestion={handleAddQuestion}
                 />
               </motion.div>
             )}
@@ -312,10 +398,16 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
               <span className="text-[9px] font-black uppercase tracking-widest text-nova-purple">Syncing...</span>
             </>
           ) : saveError ? (
-            <>
+            <button
+              onClick={() => {
+                setSaveError(null);
+                setLastSaved(new Date()); // Reset error state
+              }}
+              className="flex items-center gap-2 group pointer-events-auto"
+            >
               <AlertCircle size={12} className="text-red-500" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Sync Error</span>
-            </>
+              <span className="text-[9px] font-black uppercase tracking-widest text-red-500 group-hover:underline">Sync Error - Retry</span>
+            </button>
           ) : (
             <>
               <CheckCircle2 size={12} className="text-nova-green" />

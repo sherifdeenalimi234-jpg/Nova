@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SurveyQuestion, QuestionType, SurveyOption } from '@/lib/types/surveys';
 import {
   DndContext,
@@ -19,15 +19,28 @@ import {
 } from '@dnd-kit/sortable';
 import { Plus, MessageSquare } from 'lucide-react';
 import QuestionCard from './QuestionCard';
-import { saveQuestion, deleteQuestion, saveOption, deleteOption } from '@/lib/actions/surveys';
+import { saveQuestion, deleteQuestion, saveOption, deleteOption, reorderQuestions } from '@/lib/actions/surveys';
 
 interface QuestionListProps {
   surveyId: string;
   initialQuestions: SurveyQuestion[];
+  onUpdateQuestion: (id: string, updates: any) => void;
+  onDeleteQuestion: (id: string) => void;
+  onAddQuestion: (sectionId: string | null) => void;
 }
 
-export default function QuestionList({ surveyId, initialQuestions }: QuestionListProps) {
+export default function QuestionList({
+  surveyId,
+  initialQuestions,
+  onUpdateQuestion,
+  onDeleteQuestion,
+  onAddQuestion
+}: QuestionListProps) {
   const [questions, setQuestions] = useState<SurveyQuestion[]>(initialQuestions);
+
+  useEffect(() => {
+    setQuestions(initialQuestions);
+  }, [initialQuestions]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -40,48 +53,31 @@ export default function QuestionList({ surveyId, initialQuestions }: QuestionLis
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      setQuestions((items) => {
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over?.id);
+      const oldIndex = questions.findIndex((i) => i.id === active.id);
+      const newIndex = questions.findIndex((i) => i.id === over?.id);
+      const newItems = arrayMove(questions, oldIndex, newIndex);
 
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        // Update order_index for all items and save
-        newItems.forEach((item, index) => {
-           saveQuestion(surveyId, { id: item.id, order_index: index });
-        });
-        return newItems;
-      });
+      setQuestions(newItems);
+
+      // Persist to DB
+      await reorderQuestions(surveyId, newItems.map(q => q.id));
     }
   };
 
   const addQuestion = async () => {
-    const tempId = `temp-${Date.now()}`;
-    const newQ: Partial<SurveyQuestion> = {
-      type: 'short_text',
-      title: '',
-      is_required: true,
-      order_index: questions.length,
-      survey_id: surveyId
-    };
-
-    const result = await saveQuestion(surveyId, newQ);
-    if (result.data) {
-      setQuestions([...questions, result.data as SurveyQuestion]);
-    }
+    onAddQuestion(null);
   };
 
   const updateQuestion = async (id: string, updates: Partial<SurveyQuestion>) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
-    await saveQuestion(surveyId, { id, ...updates });
+    onUpdateQuestion(id, updates);
   };
 
   const removeQuestion = async (id: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
-    await deleteQuestion(surveyId, id);
+    onDeleteQuestion(id);
   };
 
   const duplicateQuestion = async (id: string) => {
