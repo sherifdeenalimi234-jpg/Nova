@@ -8,10 +8,30 @@ import { MessageSquare, Sparkles, Rocket } from 'lucide-react';
 interface BuilderCanvasProps {
   survey: Survey;
   selectedQuestionId: string | null;
+  selectedSectionId: string | null;
   onSelectQuestion: (id: string) => void;
+  onUpdateQuestion: (id: string, updates: Partial<SurveyQuestion>) => void;
+  onDeleteQuestion: (id: string) => void;
+  onCreateQuestion: (sectionId?: string) => void;
+  onReorderQuestions: (ids: string[]) => void;
+  onAddOption: (questionId: string) => void;
+  onUpdateOption: (questionId: string, optionId: string, text: string) => void;
+  onDeleteOption: (questionId: string, optionId: string) => void;
 }
 
-export default function BuilderCanvas({ survey, selectedQuestionId, onSelectQuestion }: BuilderCanvasProps) {
+export default function BuilderCanvas({
+  survey,
+  selectedQuestionId,
+  selectedSectionId,
+  onSelectQuestion,
+  onUpdateQuestion,
+  onDeleteQuestion,
+  onCreateQuestion,
+  onReorderQuestions,
+  onAddOption,
+  onUpdateOption,
+  onDeleteOption
+}: BuilderCanvasProps) {
   return (
     <div className="min-h-full flex flex-col">
       {/* Canvas Header */}
@@ -46,7 +66,17 @@ export default function BuilderCanvas({ survey, selectedQuestionId, onSelectQues
         <div className="max-w-4xl mx-auto">
           <QuestionList
             surveyId={survey.id}
-            initialQuestions={survey.questions || []}
+            questions={survey.questions || []}
+            sections={survey.sections || []}
+            selectedSectionId={selectedSectionId}
+            onSelectQuestion={onSelectQuestion}
+            onUpdateQuestion={onUpdateQuestion}
+            onDeleteQuestion={onDeleteQuestion}
+            onCreateQuestion={onCreateQuestion}
+            onReorderQuestions={onReorderQuestions}
+            onAddOption={onAddOption}
+            onUpdateOption={onUpdateOption}
+            onDeleteOption={onDeleteOption}
           />
         </div>
       </div>

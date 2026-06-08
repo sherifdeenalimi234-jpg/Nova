@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useCallback } from 'react';
-import { SurveyQuestion, QuestionType, SurveyOption } from '@/lib/types/surveys';
 import {
   DndContext,
   closestCenter,
@@ -17,17 +15,39 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { Plus, MessageSquare } from 'lucide-react';
+import { Plus, MessageSquare, Layout } from 'lucide-react';
 import QuestionCard from './QuestionCard';
-import { saveQuestion, deleteQuestion, saveOption, deleteOption } from '@/lib/actions/surveys';
+import { SurveyQuestion, SurveySection } from '@/lib/types/surveys';
 
 interface QuestionListProps {
   surveyId: string;
-  initialQuestions: SurveyQuestion[];
+  questions: SurveyQuestion[];
+  sections: SurveySection[];
+  selectedSectionId: string | null;
+  onSelectQuestion: (id: string) => void;
+  onUpdateQuestion: (id: string, updates: Partial<SurveyQuestion>) => void;
+  onDeleteQuestion: (id: string) => void;
+  onCreateQuestion: (sectionId?: string) => void;
+  onReorderQuestions: (ids: string[]) => void;
+  onAddOption: (questionId: string) => void;
+  onUpdateOption: (questionId: string, optionId: string, text: string) => void;
+  onDeleteOption: (questionId: string, optionId: string) => void;
 }
 
-export default function QuestionList({ surveyId, initialQuestions }: QuestionListProps) {
-  const [questions, setQuestions] = useState<SurveyQuestion[]>(initialQuestions);
+export default function QuestionList({
+  surveyId,
+  questions,
+  sections,
+  selectedSectionId,
+  onSelectQuestion,
+  onUpdateQuestion,
+  onDeleteQuestion,
+  onCreateQuestion,
+  onReorderQuestions,
+  onAddOption,
+  onUpdateOption,
+  onDeleteOption
+}: QuestionListProps) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -44,123 +64,55 @@ export default function QuestionList({ surveyId, initialQuestions }: QuestionLis
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      setQuestions((items) => {
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over?.id);
-
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        // Update order_index for all items and save
-        newItems.forEach((item, index) => {
-           saveQuestion(surveyId, { id: item.id, order_index: index });
-        });
-        return newItems;
-      });
+      const oldIndex = questions.findIndex((i) => i.id === active.id);
+      const newIndex = questions.findIndex((i) => i.id === over?.id);
+      const newItems = arrayMove(questions, oldIndex, newIndex);
+      onReorderQuestions(newItems.map(q => q.id));
     }
   };
 
-  const addQuestion = async () => {
-    const tempId = `temp-${Date.now()}`;
-    const newQ: Partial<SurveyQuestion> = {
-      type: 'short_text',
-      title: '',
-      is_required: true,
-      order_index: questions.length,
-      survey_id: surveyId
-    };
+  // Filter questions by selected section if applicable
+  const displayQuestions = selectedSectionId
+    ? questions.filter(q => q.section_id === selectedSectionId)
+    : questions;
 
-    const result = await saveQuestion(surveyId, newQ);
-    if (result.data) {
-      setQuestions([...questions, result.data as SurveyQuestion]);
-    }
-  };
-
-  const updateQuestion = async (id: string, updates: Partial<SurveyQuestion>) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
-    await saveQuestion(surveyId, { id, ...updates });
-  };
-
-  const removeQuestion = async (id: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
-    await deleteQuestion(surveyId, id);
-  };
-
-  const duplicateQuestion = async (id: string) => {
-    const questionToDup = questions.find(q => q.id === id);
-    if (!questionToDup) return;
-
-    const { id: _, created_at, updated_at, options, ...qData } = questionToDup as any;
-    const result = await saveQuestion(surveyId, { ...qData, title: `${qData.title} (Copy)`, order_index: questions.length });
-
-    if (result.data) {
-      const newQ = result.data as SurveyQuestion;
-      // Duplicate options if any
-      if (options) {
-        const newOptions = [];
-        for (const opt of options) {
-          const { id: __, ...oData } = opt;
-          const oResult = await saveOption(newQ.id, oData);
-          if (oResult.data) newOptions.push(oResult.data);
-        }
-        newQ.options = newOptions;
-      }
-      setQuestions([...questions, newQ]);
-    }
-  };
-
-  const addOption = async (questionId: string) => {
-    const question = questions.find(q => q.id === questionId);
-    if (!question) return;
-
-    const newOption = {
-      text: '',
-      order_index: (question.options || []).length
-    };
-
-    const result = await saveOption(questionId, newOption);
-    if (result.data) {
-      setQuestions(prev => prev.map(q =>
-        q.id === questionId
-          ? { ...q, options: [...(q.options || []), result.data as SurveyOption] }
-          : q
-      ));
-    }
-  };
-
-  const updateOption = async (questionId: string, optionId: string, text: string) => {
-    setQuestions(prev => prev.map(q =>
-      q.id === questionId
-        ? { ...q, options: (q.options || []).map(o => o.id === optionId ? { ...o, text } : o) }
-        : q
-    ));
-    await saveOption(questionId, { id: optionId, text });
-  };
-
-  const removeOption = async (questionId: string, optionId: string) => {
-    setQuestions(prev => prev.map(q =>
-      q.id === questionId
-        ? { ...q, options: (q.options || []).filter(o => o.id !== optionId) }
-        : q
-    ));
-    await deleteOption(questionId, optionId);
-  };
+  const currentSection = sections.find(s => s.id === selectedSectionId);
 
   return (
     <div className="space-y-6 pb-32">
-      {questions.length === 0 ? (
-        <div className="text-center py-20 bg-zinc-900/50 rounded-3xl border border-zinc-800 border-dashed">
-          <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <MessageSquare className="w-8 h-8 text-zinc-700" />
+      {selectedSectionId && (
+        <div className="mb-8 p-6 rounded-3xl bg-nova-cyan/5 border border-nova-cyan/10">
+          <div className="flex items-center gap-3 text-nova-cyan mb-2">
+            <Layout size={16} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Viewing Section</span>
           </div>
-          <h2 className="text-xl font-bold text-zinc-300 mb-2">Create your first question.</h2>
-          <p className="text-zinc-500 mb-8 max-w-xs mx-auto">
-            Click the button below to add your first logic node and start building your survey.
+          <h3 className="text-xl font-black text-white">{currentSection?.title || 'Untitled Section'}</h3>
+          {currentSection?.description && (
+            <p className="text-sm text-white/40 mt-1">{currentSection.description}</p>
+          )}
+        </div>
+      )}
+
+      {displayQuestions.length === 0 ? (
+        <div className="text-center py-20 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+          <div className="w-20 h-20 bg-white/[0.03] rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <MessageSquare className="w-8 h-8 text-white/10" />
+          </div>
+          <h2 className="text-xl font-bold text-white/60 mb-2">
+            {selectedSectionId ? "No questions in this section." : "Create your first question."}
+          </h2>
+          <p className="text-white/20 mb-8 max-w-xs mx-auto text-sm">
+            {selectedSectionId
+              ? "Add a question to this section to start collecting data."
+              : "Click the button below to add your first logic node and start building your survey."
+            }
           </p>
           <button
-            onClick={addQuestion}
-            className="flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl mx-auto transition-all"
+            onClick={() => onCreateQuestion(selectedSectionId || undefined)}
+            className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl mx-auto transition-all"
           >
             <Plus className="w-5 h-5" />
-            Add First Question
+            Add Question
           </button>
         </div>
       ) : (
@@ -171,32 +123,32 @@ export default function QuestionList({ surveyId, initialQuestions }: QuestionLis
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={questions.map(q => q.id)}
+              items={displayQuestions.map(q => q.id)}
               strategy={verticalListSortingStrategy}
             >
-              {questions.map((question) => (
+              {displayQuestions.map((question) => (
                 <QuestionCard
                   key={question.id}
                   question={question}
-                  onUpdate={updateQuestion}
-                  onDelete={removeQuestion}
-                  onDuplicate={duplicateQuestion}
-                  onAddOption={addOption}
-                  onUpdateOption={updateOption}
-                  onDeleteOption={removeOption}
+                  onUpdate={onUpdateQuestion}
+                  onDelete={onDeleteQuestion}
+                  onAddOption={onAddOption}
+                  onUpdateOption={onUpdateOption}
+                  onDeleteOption={onDeleteOption}
+                  onSelect={() => onSelectQuestion(question.id)}
                 />
               ))}
             </SortableContext>
           </DndContext>
 
           <button
-            onClick={addQuestion}
-            className="w-full py-4 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 border-dashed rounded-2xl flex items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group"
+            onClick={() => onCreateQuestion(selectedSectionId || undefined)}
+            className="w-full py-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 border-dashed rounded-2xl flex items-center justify-center gap-2 text-white/40 hover:text-white transition-all group"
           >
-            <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-black transition-colors">
+            <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-nova-purple group-hover:text-white transition-colors">
                 <Plus className="w-5 h-5" />
             </div>
-            <span className="font-bold">Add Question</span>
+            <span className="font-bold text-sm uppercase tracking-widest">Add Question</span>
           </button>
         </>
       )}
