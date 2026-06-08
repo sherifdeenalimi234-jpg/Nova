@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Survey, SurveyStats, SurveyQuestion, SurveyOption } from '@/lib/types/surveys';
+import { Survey, SurveyStats, SurveyQuestion, SurveyOption, SurveySection } from '@/lib/types/surveys';
 
 export async function createSurvey(data: {
   title: string;
@@ -199,9 +199,22 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
 
     if (!survey) return { error: { message: "Node not found in intelligence stream.", code: 'NOT_FOUND' } };
 
-    // 3. Question Fetch (Robust Isolation)
+    // 3. Section & Question Fetch
+    let sectionsData: any[] = [];
     let questionsData: any[] = [];
     try {
+      // Fetch Sections
+      const { data: sData, error: sError } = await supabase
+        .from('survey_sections')
+        .select('*')
+        .eq('survey_id', surveyId)
+        .order('order_index', { ascending: true });
+
+      if (!sError && sData) {
+        sectionsData = sData;
+      }
+
+      // Fetch Questions
       const { data: qData, error: qError } = await supabase
         .from('survey_questions')
         .select('*, survey_options(*)')
@@ -214,13 +227,14 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
           options: q.survey_options || []
         }));
       }
-    } catch (innerQErr) {
-      console.warn("[getSurveyForBuilder] Questions retrieval failed (non-blocking):", innerQErr);
+    } catch (innerErr) {
+      console.warn("[getSurveyForBuilder] Data retrieval failed (non-blocking):", innerErr);
     }
 
     // 4. Final Assembler (Absolute Serializability)
     const result = {
       ...survey,
+      sections: sectionsData,
       questions: questionsData,
       tags: survey.tags || [],
       settings: survey.settings || { anonymous: false, one_response_per_participant: true },
@@ -258,6 +272,75 @@ export async function updateSurveyDetails(surveyId: string, updates: Partial<Sur
   return { data };
 }
 
+// SECTION ACTIONS
+export async function saveSection(surveyId: string, section: Partial<SurveySection>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { id, created_at, updated_at, questions, ...sectionData } = section as any;
+
+  let result;
+  if (id && !id.startsWith('temp-')) {
+    result = await supabase
+      .from('survey_sections')
+      .update(sectionData)
+      .eq('id', id)
+      .eq('survey_id', surveyId)
+      .select()
+      .single();
+  } else {
+    result = await supabase
+      .from('survey_sections')
+      .insert({ ...sectionData, survey_id: surveyId })
+      .select()
+      .single();
+  }
+
+  if (result.error) return { error: result.error };
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { data: result.data };
+}
+
+export async function deleteSection(surveyId: string, sectionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const { error } = await supabase
+    .from('survey_sections')
+    .delete()
+    .eq('id', sectionId)
+    .eq('survey_id', surveyId);
+
+  if (!error) {
+    revalidatePath(`/creator-surveys/${surveyId}/build`);
+  }
+  return { error };
+}
+
+export async function reorderSections(surveyId: string, sectionIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const updates = sectionIds.map((id, index) =>
+    supabase.from('survey_sections').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
+  );
+
+  const results = await Promise.all(updates);
+  const error = results.find(r => r.error)?.error;
+
+  if (!error) {
+    revalidatePath(`/creator-surveys/${surveyId}/build`);
+  }
+  return { error };
+}
+
+// QUESTION ACTIONS
 export async function saveQuestion(surveyId: string, question: Partial<SurveyQuestion>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -294,6 +377,7 @@ export async function saveQuestion(surveyId: string, question: Partial<SurveyQue
   }
 
   if (result.error) return { error: result.error };
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { data: result.data };
 }
 
@@ -309,6 +393,28 @@ export async function deleteQuestion(surveyId: string, questionId: string) {
     .eq('id', questionId)
     .eq('survey_id', surveyId);
 
+  if (!error) {
+    revalidatePath(`/creator-surveys/${surveyId}/build`);
+  }
+  return { error };
+}
+
+export async function reorderQuestions(surveyId: string, questionIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required." };
+
+  const updates = questionIds.map((id, index) =>
+    supabase.from('survey_questions').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
+  );
+
+  const results = await Promise.all(updates);
+  const error = results.find(r => r.error)?.error;
+
+  if (!error) {
+    revalidatePath(`/creator-surveys/${surveyId}/build`);
+  }
   return { error };
 }
 
