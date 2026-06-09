@@ -8,6 +8,7 @@ export type QuestionType =
   | 'rating'
   | 'yes_no'
   | 'date'
+  | 'email'
   | 'number';
 
 export interface SurveySettings {

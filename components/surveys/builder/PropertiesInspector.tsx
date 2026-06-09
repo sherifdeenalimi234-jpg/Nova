@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Calendar,
   ToggleLeft,
+  Mail,
   Hash
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,6 +49,7 @@ const QUESTION_TYPES: { type: QuestionType; label: string; icon: any }[] = [
   { type: 'rating', label: 'Rating', icon: Star },
   { type: 'yes_no', label: 'Yes/No', icon: ToggleLeft },
   { type: 'date', label: 'Date', icon: Calendar },
+  { type: 'email', label: 'Email', icon: Mail },
   { type: 'number', label: 'Number', icon: Hash },
 ];
 
