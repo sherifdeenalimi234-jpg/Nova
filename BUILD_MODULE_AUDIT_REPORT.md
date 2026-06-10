@@ -1,35 +1,20 @@
-# BUILD MODULE BACKEND AUDIT REPORT
+# BUILD MODULE AUDIT REPORT
 
-## 1. DATABASE SCHEMA STATUS
+## 1. Routing & Access
+- **Route**: `/creator-surveys/[id]/build` is active and correctly mapped in `WorkspaceShell.tsx`.
+- **Access Control**: `getSurveyForBuilder` correctly validates ownership before serving data.
 
-### Found Tables:
-- `surveys`: Operational, but missing some Blueprint alignment columns.
-- `survey_responses`: Operational.
+## 2. UI Architecture
+- **Layout**: Implements a robust three-panel architecture (Structure, Canvas, Inspector).
+- **Responsive Design**: Uses Framer Motion for panel transitions and a mobile-specific mode switcher in `BuildWorkspace.tsx`.
+- **Components**: Modularized into `StructurePanel`, `BuilderCanvas`, `PropertiesInspector`, and `QuestionList`.
 
-### Missing/Incomplete Tables:
-- `survey_sections`: Found migration but potentially not applied or inconsistent.
-- `survey_questions`: Found migration but potentially not applied or inconsistent.
-- `survey_options`: Found migration but potentially not applied or inconsistent.
-- `survey_logic_rules`: **MISSING**. No table definition or server actions found.
+## 3. Data Flow
+- **Persistence**: Relies on normalized relational tables (`survey_sections`, `survey_questions`, etc.).
+- **State Management**: Uses optimistic UI updates with a debounced autosave mechanism (1s debounce).
+- **Hydration**: `getSurveyForBuilder` uses relational joins to hydrate the full survey tree.
 
-### RLS & Constraints:
-- RLS policies were inconsistent across tables.
-- Cascade delete behaviors were not uniformly implemented, risking orphaned questions/options.
-
-## 2. SERVER ACTIONS AUDIT (`lib/actions/surveys.ts`)
-
-- `saveSection`: Exists, but lacked robust error handling.
-- `saveQuestion`: Exists, but lacked ownership validation and robust error handling.
-- `saveOption`: Exists, but lacked error handling.
-- `logic_rules`: **NO ACTIONS IMPLEMENTED**.
-
-## 3. IDENTIFIED GAPS
-1. Absence of `survey_logic_rules` table.
-2. Absence of CRUD server actions for logic rules.
-3. Lack of debouncing in the frontend sync pipeline (causing potential race conditions).
-4. Disconnect between the Inspector panel and the latest database state in certain edge cases (selection timing).
-
-## 4. RESTORATION PLAN
-1. Execute `20240625000000_survey_backend_restoration.sql` to unify the schema.
-2. Implement `saveLogicRule` and `deleteLogicRule` server actions.
-3. Apply debouncing and selection fixes to `BuildWorkspace.tsx`.
+## 4. Identified Gaps
+- **Critical**: Missing database tables (`survey_sections`, `survey_questions`, `survey_options`, `survey_logic_rules`).
+- **Critical**: Namespace collision on `surveys.questions` (JSONB vs Table).
+- **Critical**: Column mismatch in `survey_responses` (`user_id`/`answers` vs `participant_id`/`responses`).
