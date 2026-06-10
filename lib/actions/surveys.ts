@@ -364,6 +364,42 @@ export async function deleteOption(questionId: string, optionId: string) {
   return { error };
 }
 
+export async function createLogicRule(surveyId: string, rule: any) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  const { id, created_at, updated_at, ...ruleData } = rule;
+  const result = await supabase
+    .from('survey_logic_rules')
+    .insert({ ...ruleData, survey_id: surveyId })
+    .select()
+    .single();
+
+  if (!result.error) revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { data: result.data, error: result.error };
+}
+
+export async function updateLogicRule(surveyId: string, ruleId: string, updates: any) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  const { id, created_at, updated_at, ...ruleData } = updates;
+  const result = await supabase
+    .from('survey_logic_rules')
+    .update(ruleData)
+    .eq('id', ruleId)
+    .eq('survey_id', surveyId)
+    .select()
+    .single();
+
+  if (!result.error) revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { data: result.data, error: result.error };
+}
+
 export async function saveLogicRule(surveyId: string, rule: any) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -389,7 +425,8 @@ export async function saveLogicRule(surveyId: string, rule: any) {
       .single();
   }
 
-  return result;
+  if (!result.error) revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { data: result.data, error: result.error };
 }
 
 export async function deleteLogicRule(surveyId: string, ruleId: string) {

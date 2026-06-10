@@ -4,13 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Survey, SurveyQuestion, SurveySection, QuestionType, SurveyOption } from '@/lib/types/surveys';
 import {
   Settings2,
-  Info,
-  AlertCircle,
   Trash2,
   Copy,
-  Eye,
-  Lock,
-  Zap,
   Layout,
   Type,
   AlignLeft,
@@ -24,7 +19,10 @@ import {
   Calendar,
   ToggleLeft,
   Mail,
-  Hash
+  Hash,
+  AlertCircle,
+  Zap,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -73,40 +71,37 @@ export default function PropertiesInspector({
   // Local state for debounced inputs
   const [localTitle, setLocalTitle] = useState('');
   const [localDescription, setLocalDescription] = useState('');
-  const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const descDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track which ID the local state belongs to
+  const currentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setLocalTitle(selectedQuestion?.title || selectedSection?.title || '');
-    setLocalDescription(selectedQuestion?.description || selectedSection?.description || '');
-  }, [selectedQuestionId, selectedSectionId]);
+    const activeId = selectedQuestionId || selectedSectionId;
+    if (activeId !== currentIdRef.current) {
+        setLocalTitle(selectedQuestion?.title || selectedSection?.title || '');
+        setLocalDescription(selectedQuestion?.description || selectedSection?.description || '');
+        currentIdRef.current = activeId;
+    }
+  }, [selectedQuestionId, selectedSectionId, selectedQuestion?.title, selectedSection?.title, selectedQuestion?.description, selectedSection?.description]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalTitle(value);
-
-    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
-    titleDebounceRef.current = setTimeout(() => {
-        if (selectedQuestion) {
-            onUpdate('question', selectedQuestion.id, { title: value });
-        } else if (selectedSection) {
-            onUpdate('section', selectedSection.id, { title: value });
-        }
-    }, 500);
+    if (selectedQuestion) {
+        onUpdate('question', selectedQuestion.id, { title: value });
+    } else if (selectedSection) {
+        onUpdate('section', selectedSection.id, { title: value });
+    }
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setLocalDescription(value);
-
-    if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
-    descDebounceRef.current = setTimeout(() => {
-        if (selectedQuestion) {
-            onUpdate('question', selectedQuestion.id, { description: value });
-        } else if (selectedSection) {
-            onUpdate('section', selectedSection.id, { description: value });
-        }
-    }, 500);
+    if (selectedQuestion) {
+        onUpdate('question', selectedQuestion.id, { description: value });
+    } else if (selectedSection) {
+        onUpdate('section', selectedSection.id, { description: value });
+    }
   };
 
   const handleToggleRequired = () => {
@@ -176,7 +171,7 @@ export default function PropertiesInspector({
               {selectedQuestion ? 'Question Properties' : 'Section Properties'}
             </h3>
             <p className="text-[9px] text-white/20 font-black uppercase tracking-tighter">
-              Node ID: {selectedQuestion?.id.slice(0, 8) || selectedSection?.id.slice(0, 8)}
+              Node ID: {(selectedQuestion?.id || selectedSection?.id || '').slice(0, 8)}
             </p>
           </div>
         </div>
@@ -212,7 +207,7 @@ export default function PropertiesInspector({
                 className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all"
               >
                 <div className="flex items-center gap-3 text-white/60">
-                  {QUESTION_TYPES.find(t => t.type === selectedQuestion.type)?.icon({ size: 16 })}
+                  {React.createElement(QUESTION_TYPES.find(t => t.type === selectedQuestion.type)?.icon || Type, { size: 16 })}
                   <span className="text-[10px] font-black uppercase tracking-widest">
                     {QUESTION_TYPES.find(t => t.type === selectedQuestion.type)?.label}
                   </span>
@@ -329,7 +324,6 @@ export default function PropertiesInspector({
                     </div>
                  </div>
 
-                 {/* Validation Rules */}
                  <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 space-y-4">
                     <div className="flex items-center gap-2 text-nova-cyan opacity-40">
                        <Zap size={12} />

@@ -45,7 +45,13 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
 
   // Debouncing logic for autosave
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdatesRef = useRef<{type: 'question' | 'section', id: string, updates: any}[]>([]);
+  const pendingUpdatesRef = useRef<Map<string, {type: 'question' | 'section', id: string, updates: any}>>(new Map());
+
+  // Use a ref to store the latest survey state for the autosave function
+  const surveyRef = useRef<Survey>(survey);
+  useEffect(() => {
+    surveyRef.current = survey;
+  }, [survey]);
 
   useEffect(() => {
     setSurvey(initialSurvey);
@@ -89,28 +95,32 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
   };
 
   const performSave = async () => {
-    if (pendingUpdatesRef.current.length === 0) return;
+    if (pendingUpdatesRef.current.size === 0) return;
 
     setIsSaving(true);
     setSaveError(null);
 
-    const updatesToProcess = [...pendingUpdatesRef.current];
-    pendingUpdatesRef.current = [];
+    const updatesToProcess = Array.from(pendingUpdatesRef.current.values());
+    pendingUpdatesRef.current.clear();
 
     try {
       for (const item of updatesToProcess) {
         let result;
         if (item.type === 'question') {
-          result = await saveQuestion(survey.id, { id: item.id, ...item.updates });
+          // Find the latest question state including options
+          const currentQuestion = surveyRef.current.questions?.find(q => q.id === item.id);
+          result = await saveQuestion(surveyRef.current.id, { ...currentQuestion, ...item.updates });
         } else {
-          result = await saveSection(survey.id, { id: item.id, ...item.updates });
+          const currentSection = surveyRef.current.sections?.find(s => s.id === item.id);
+          result = await saveSection(surveyRef.current.id, { ...currentSection, ...item.updates });
         }
         if (result.error) throw result.error;
       }
       setLastSaved(new Date());
     } catch (err: any) {
+      console.error("[BuildWorkspace] Save Error:", err);
       setSaveError(err.message || "Failed to save changes");
-      // If failed, we might want to put them back or just let the user know
+      // Optionally re-queue failed updates
     } finally {
       setIsSaving(false);
     }
@@ -133,7 +143,12 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     });
 
     // Add to pending updates and debounce
-    pendingUpdatesRef.current.push({ type, id, updates });
+    const existing = pendingUpdatesRef.current.get(id) || { type, id, updates: {} };
+    pendingUpdatesRef.current.set(id, {
+      ...existing,
+      updates: { ...existing.updates, ...updates }
+    });
+
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(performSave, 1000); // 1s debounce
   };
@@ -209,7 +224,8 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       if (result.data) {
         setSurvey(prev => {
           if (type === 'question') {
-            return { ...prev, questions: [...(prev.questions || []), result.data as SurveyQuestion] };
+             const newQ = { ...result.data, options: [] };
+             return { ...prev, questions: [...(prev.questions || []), newQ as SurveyQuestion] };
           } else {
             return { ...prev, sections: [...(prev.sections || []), result.data as SurveySection] };
           }
@@ -366,7 +382,6 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       )
     }));
 
-    // For options, we could also debounce but let's keep it simple for now or use the same mechanism
     try {
       const result = await saveOption(questionId, { id: optionId, text });
       if (result.error) throw result.error;
