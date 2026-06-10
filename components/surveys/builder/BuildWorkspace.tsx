@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Survey, SurveyQuestion, SurveySection, SurveyOption } from '@/lib/types/surveys';
 import StructurePanel from './StructurePanel';
 import BuilderCanvas from './BuilderCanvas';
@@ -17,12 +17,9 @@ import {
   deleteOption
 } from '@/lib/actions/surveys';
 import {
-  ChevronLeft,
-  ChevronRight,
   Settings2,
   Layers,
   Layout,
-  Save,
   CheckCircle2,
   AlertCircle,
   Loader2
@@ -46,7 +43,10 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
-  // Sync with initial survey if it changes externally
+  // Debouncing logic for autosave
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<{type: 'question' | 'section', id: string, updates: any}[]>([]);
+
   useEffect(() => {
     setSurvey(initialSurvey);
   }, [initialSurvey]);
@@ -88,10 +88,35 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     }
   };
 
-  const handleUpdateItem = async (type: 'question' | 'section', id: string, updates: any) => {
+  const performSave = async () => {
+    if (pendingUpdatesRef.current.length === 0) return;
+
     setIsSaving(true);
     setSaveError(null);
 
+    const updatesToProcess = [...pendingUpdatesRef.current];
+    pendingUpdatesRef.current = [];
+
+    try {
+      for (const item of updatesToProcess) {
+        let result;
+        if (item.type === 'question') {
+          result = await saveQuestion(survey.id, { id: item.id, ...item.updates });
+        } else {
+          result = await saveSection(survey.id, { id: item.id, ...item.updates });
+        }
+        if (result.error) throw result.error;
+      }
+      setLastSaved(new Date());
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to save changes");
+      // If failed, we might want to put them back or just let the user know
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateItem = (type: 'question' | 'section', id: string, updates: any) => {
     // Optimistic UI Update
     setSurvey(prev => {
       if (type === 'question') {
@@ -107,28 +132,16 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       }
     });
 
-    try {
-      let result;
-      if (type === 'question') {
-        result = await saveQuestion(survey.id, { id, ...updates });
-      } else {
-        result = await saveSection(survey.id, { id, ...updates });
-      }
-
-      if (result.error) throw result.error;
-      setLastSaved(new Date());
-    } catch (err: any) {
-      setSaveError(err.message || "Failed to save changes");
-    } finally {
-      setIsSaving(false);
-    }
+    // Add to pending updates and debounce
+    pendingUpdatesRef.current.push({ type, id, updates });
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(performSave, 1000); // 1s debounce
   };
 
   const handleDeleteItem = async (type: 'question' | 'section', id: string) => {
     setIsSaving(true);
     setSaveError(null);
 
-    // Optimistic UI Update
     setSurvey(prev => {
       if (type === 'question') {
         return {
@@ -136,8 +149,6 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
           questions: prev.questions?.filter(q => q.id !== id)
         };
       } else {
-        // When deleting a section, questions might need to be handled.
-        // Based on schema, section_id is SET NULL on delete.
         return {
           ...prev,
           sections: prev.sections?.filter(s => s.id !== id),
@@ -149,20 +160,17 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     if (selectedQuestionId === id || selectedSectionId === id) {
       setSelectedQuestionId(null);
       setSelectedSectionId(null);
-      setActiveMode('canvas');
     }
 
     try {
-      let error;
+      let result;
       if (type === 'question') {
-        const result = await deleteQuestion(survey.id, id);
-        error = result.error;
+        result = await deleteQuestion(survey.id, id);
       } else {
-        const result = await deleteSection(survey.id, id);
-        error = result.error;
+        result = await deleteSection(survey.id, id);
       }
 
-      if (error) throw error;
+      if (result.error) throw result.error;
       setLastSaved(new Date());
     } catch (err: any) {
       setSaveError(err.message || "Failed to delete item");
@@ -182,7 +190,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
           survey_id: survey.id,
           section_id: sectionId || null,
           type: 'short_text',
-          title: '',
+          title: 'New Question',
           is_required: true,
           order_index: (survey.questions || []).length
         };
@@ -190,7 +198,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       } else {
         const newSection: Partial<SurveySection> = {
           survey_id: survey.id,
-          title: '',
+          title: 'New Section',
           order_index: (survey.sections || []).length
         };
         result = await saveSection(survey.id, newSection);
@@ -213,7 +221,6 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
           handleSelectSection(result.data.id);
         }
       }
-
       setLastSaved(new Date());
     } catch (err: any) {
       setSaveError(err.message || "Failed to create item");
@@ -270,6 +277,8 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
             return { ...prev, sections: [...(prev.sections || []), result.data as SurveySection] };
           }
         });
+        if (type === 'question') handleSelectQuestion(result.data.id);
+        else handleSelectSection(result.data.id);
       }
       setLastSaved(new Date());
     } catch (err: any) {
@@ -283,7 +292,6 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     setIsSaving(true);
     setSaveError(null);
 
-    // Optimistic Update
     setSurvey(prev => {
       if (type === 'question') {
         const reorderedQuestions = [...(prev.questions || [])].sort((a, b) => {
@@ -305,7 +313,6 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       } else {
         result = await reorderSections(survey.id, reorderedIds);
       }
-
       if (result?.error) throw result.error;
       setLastSaved(new Date());
     } catch (err: any) {
@@ -323,7 +330,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
       const question = survey.questions?.find(q => q.id === questionId);
       const newOption: Partial<SurveyOption> = {
         question_id: questionId,
-        text: '',
+        text: 'New Option',
         order_index: (question?.options || []).length
       };
 
@@ -349,30 +356,23 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
   };
 
   const handleUpdateOption = async (questionId: string, optionId: string, text: string) => {
-    setIsSaving(true);
-    setSaveError(null);
-
     // Optimistic Update
     setSurvey(prev => ({
       ...prev,
       questions: prev.questions?.map(q =>
         q.id === questionId
-          ? {
-              ...q,
-              options: q.options?.map(o => o.id === optionId ? { ...o, text } : o)
-            }
+          ? { ...q, options: q.options?.map(o => o.id === optionId ? { ...o, text } : o) }
           : q
       )
     }));
 
+    // For options, we could also debounce but let's keep it simple for now or use the same mechanism
     try {
       const result = await saveOption(questionId, { id: optionId, text });
       if (result.error) throw result.error;
       setLastSaved(new Date());
     } catch (err: any) {
       setSaveError(err.message || "Failed to update option");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -380,15 +380,11 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
     setIsSaving(true);
     setSaveError(null);
 
-    // Optimistic Update
     setSurvey(prev => ({
       ...prev,
       questions: prev.questions?.map(q =>
         q.id === questionId
-          ? {
-              ...q,
-              options: q.options?.filter(o => o.id !== optionId)
-            }
+          ? { ...q, options: q.options?.filter(o => o.id !== optionId) }
           : q
       )
     }));
@@ -501,7 +497,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
           </div>
         </motion.aside>
 
-        {/* Mobile Views (Overlaying other panels based on activeMode) */}
+        {/* Mobile Views */}
         <div className="md:hidden flex-1 overflow-hidden">
           <AnimatePresence mode="wait">
             {activeMode === 'structure' && (
@@ -571,7 +567,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
         </div>
       </div>
 
-      {/* Sync Status Overlay (Fixed bottom) */}
+      {/* Sync Status Overlay */}
       <div className="fixed bottom-24 right-10 z-50 pointer-events-none">
         <div className="flex items-center gap-3 px-4 py-2 bg-black/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl pointer-events-auto">
           {validationErrors.length > 0 && (
@@ -594,7 +590,7 @@ export default function BuildWorkspace({ survey: initialSurvey }: BuildWorkspace
             <>
               <CheckCircle2 size={12} className="text-nova-green" />
               <span className="text-[9px] font-black uppercase tracking-widest text-white/40">
-                {lastSaved ? `Synced ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Ready'}
+                {lastSaved ? `Synced ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Saved'}
               </span>
             </>
           )}

@@ -24,7 +24,7 @@ export async function createSurvey(data: {
       category: data.category || 'General',
       status: data.status || 'draft',
       settings: { anonymous: false, one_response_per_participant: true },
-      questions: [] // Ensure questions is initialized
+      legacy_questions: []
     })
     .select()
     .single();
@@ -44,7 +44,6 @@ export async function createSurveyWorkspace(data: {
   target_audience: string;
   target_responses: string;
   visibility: string;
-  // Optional fields
   estimated_duration?: string;
   research_category?: string;
   tags?: string[];
@@ -57,7 +56,6 @@ export async function createSurveyWorkspace(data: {
 
   if (!user) return { success: false, error: "Authentication required." };
 
-  // 1. Validate Required Fields
   const requiredFields = [
     'title',
     'research_objective',
@@ -74,8 +72,6 @@ export async function createSurveyWorkspace(data: {
     }
   }
 
-  // 2. Create Survey Record (Survey Blueprint System V1)
-  // We use a safe mapping to handle potentially missing columns gracefully
   const insertData: any = {
     creator_id: user.id,
     title: data.title,
@@ -92,7 +88,7 @@ export async function createSurveyWorkspace(data: {
     research_timeline: data.research_timeline,
     research_notes: data.research_notes,
     status: 'draft',
-    questions: [] // Legacy column compatibility
+    legacy_questions: []
   };
 
   const { data: survey, error } = await supabase
@@ -106,8 +102,6 @@ export async function createSurveyWorkspace(data: {
 
   if (error) {
     console.error("[createSurveyWorkspace] Primary Insert Failed:", error);
-
-    // If it's a column missing error, try a fallback to minimal record
     if (error.code === '42703' || error.message?.includes('column')) {
        const { data: fallbackSurvey, error: fallbackError } = await supabase
          .from('surveys')
@@ -119,10 +113,7 @@ export async function createSurveyWorkspace(data: {
          .select('id')
          .single();
 
-       if (fallbackError) {
-         console.error("[createSurveyWorkspace] Fallback Insert Failed:", fallbackError);
-         return { success: false, error: fallbackError.message };
-       }
+       if (fallbackError) return { success: false, error: fallbackError.message };
        finalId = fallbackSurvey.id;
        warning = "Some blueprint fields could not be saved due to schema mismatch.";
     } else {
@@ -130,13 +121,8 @@ export async function createSurveyWorkspace(data: {
     }
   }
 
-  if (!finalId) {
-    return { success: false, error: "Failed to establish research node ID." };
-  }
+  if (!finalId) return { success: false, error: "Failed to establish research node ID." };
 
-  console.log("[createSurveyWorkspace] Successfully established survey node:", finalId);
-
-  // 3. Activity Feed (Audit Requirement)
   try {
     await supabase.from('activity_feed').insert({
       user_id: user.id,
@@ -144,11 +130,8 @@ export async function createSurveyWorkspace(data: {
       entity_id: finalId,
       entity_type: 'survey'
     });
-  } catch (feedErr) {
-    console.error("[createSurveyWorkspace] Activity feed log failed (non-blocking):", feedErr);
-  }
+  } catch (feedErr) {}
 
-  // 4. Force Revalidation
   revalidatePath('/creator-surveys');
   revalidatePath(`/creator-surveys/${finalId}`);
 
@@ -162,76 +145,40 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
 
     if (!user) return { error: { message: "Authentication required.", code: 'AUTH_REQUIRED' } };
 
-    // 1. Primary Fetch Attempt (Full Schema)
-    let { data: survey, error: surveyError } = await supabase
+    const { data: survey, error: surveyError } = await supabase
       .from('surveys')
       .select('*')
       .eq('id', surveyId)
       .eq('creator_id', user.id)
       .single();
 
-    // 2. Schema Fallback (If columns missing)
-    if (surveyError) {
-      const isSchemaError = surveyError.code === '42703' || surveyError.message?.includes('column');
-      if (isSchemaError) {
-        console.warn("[getSurveyForBuilder] Schema mismatch detected, falling back to core fields...");
-        const fallback = await supabase
-          .from('surveys')
-          .select('id, creator_id, title, status, created_at, updated_at')
-          .eq('id', surveyId)
-          .eq('creator_id', user.id)
-          .single();
+    if (surveyError) return { error: surveyError };
+    if (!survey) return { error: { message: "Node not found.", code: 'NOT_FOUND' } };
 
-        if (fallback.error) return { error: fallback.error };
-        survey = {
-          ...fallback.data,
-          research_objective: "Schema Sync Required.",
-          visibility: 'Private',
-          survey_mode: 'Standard',
-          target_audience: 'N/A',
-          target_responses: '0',
-          tags: []
-        };
-      } else {
-        return { error: surveyError };
-      }
-    }
-
-    if (!survey) return { error: { message: "Node not found in intelligence stream.", code: 'NOT_FOUND' } };
-
-    // 3. Section & Question Fetch
     let sectionsData: any[] = [];
     let questionsData: any[] = [];
-    try {
-      // Fetch Sections
-      const { data: sData, error: sError } = await supabase
-        .from('survey_sections')
-        .select('*')
-        .eq('survey_id', surveyId)
-        .order('order_index', { ascending: true });
 
-      if (!sError && sData) {
-        sectionsData = sData;
-      }
+    const { data: sData, error: sError } = await supabase
+      .from('survey_sections')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .order('order_index', { ascending: true });
 
-      // Fetch Questions
-      const { data: qData, error: qError } = await supabase
-        .from('survey_questions')
-        .select('*, survey_options(*)')
-        .eq('survey_id', surveyId)
-        .order('order_index', { ascending: true });
+    if (!sError && sData) sectionsData = sData;
 
-      if (!qError && qData) {
-        questionsData = qData.map((q: any) => ({
-          ...q,
-          options: q.survey_options || []
-        }));
-      }
-    } catch (innerErr) {
-      console.warn("[getSurveyForBuilder] Data retrieval failed (non-blocking):", innerErr);
+    const { data: qData, error: qError } = await supabase
+      .from('survey_questions')
+      .select('*, survey_options(*)')
+      .eq('survey_id', surveyId)
+      .order('order_index', { ascending: true });
+
+    if (!qError && qData) {
+      questionsData = qData.map((q: any) => ({
+        ...q,
+        options: q.survey_options || []
+      }));
     }
 
-    // 4. Final Assembler (Absolute Serializability)
     const result = {
       ...survey,
       sections: sectionsData,
@@ -242,42 +189,31 @@ export async function getSurveyForBuilder(surveyId: string): Promise<{ data?: Su
       status: survey.status || 'draft'
     };
 
-    // Return a clean POJO with BigInt support
     return JSON.parse(JSON.stringify({ data: result as Survey }, (key, value) =>
       typeof value === 'bigint' ? value.toString() : value
     ));
   } catch (err: any) {
-    console.error("[getSurveyForBuilder] Critical System Fault:", err);
     return { error: { message: "Internal Workspace Disruption", code: 'SYSTEM_FAULT' } };
   }
 }
 
-export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// STANDARDIZED CRUD WITH OWNERSHIP CHECKS
 
-  if (!user) return { error: "Authentication required." };
-
-  const { data, error } = await supabase
+async function checkOwnership(supabase: any, surveyId: string, userId: string) {
+  const { data } = await supabase
     .from('surveys')
-    .update(updates)
+    .select('id')
     .eq('id', surveyId)
-    .eq('creator_id', user.id)
-    .select()
+    .eq('creator_id', userId)
     .single();
-
-  if (error) return { error };
-
-  revalidatePath(`/creator-surveys/${surveyId}/build`);
-  return { data };
+  return !!data;
 }
 
-// SECTION ACTIONS
 export async function saveSection(surveyId: string, section: Partial<SurveySection>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { id, created_at, updated_at, questions, ...sectionData } = section as any;
 
@@ -306,8 +242,8 @@ export async function saveSection(surveyId: string, section: Partial<SurveySecti
 export async function deleteSection(surveyId: string, sectionId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { error } = await supabase
     .from('survey_sections')
@@ -315,47 +251,15 @@ export async function deleteSection(surveyId: string, sectionId: string) {
     .eq('id', sectionId)
     .eq('survey_id', surveyId);
 
-  if (!error) {
-    revalidatePath(`/creator-surveys/${surveyId}/build`);
-  }
+  if (!error) revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { error };
 }
 
-export async function reorderSections(surveyId: string, sectionIds: string[]) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Authentication required." };
-
-  const updates = sectionIds.map((id, index) =>
-    supabase.from('survey_sections').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
-  );
-
-  const results = await Promise.all(updates);
-  const error = results.find(r => r.error)?.error;
-
-  if (!error) {
-    revalidatePath(`/creator-surveys/${surveyId}/build`);
-  }
-  return { error };
-}
-
-// QUESTION ACTIONS
 export async function saveQuestion(surveyId: string, question: Partial<SurveyQuestion>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
-
-  // Validate ownership of survey
-  const { data: survey } = await supabase
-    .from('surveys')
-    .select('id')
-    .eq('id', surveyId)
-    .eq('creator_id', user.id)
-    .single();
-
-  if (!survey) return { error: "Survey not found or access denied." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { id, options, created_at, updated_at, ...questionData } = question as any;
 
@@ -384,8 +288,8 @@ export async function saveQuestion(surveyId: string, question: Partial<SurveyQue
 export async function deleteQuestion(surveyId: string, questionId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { error } = await supabase
     .from('survey_questions')
@@ -393,36 +297,25 @@ export async function deleteQuestion(surveyId: string, questionId: string) {
     .eq('id', questionId)
     .eq('survey_id', surveyId);
 
-  if (!error) {
-    revalidatePath(`/creator-surveys/${surveyId}/build`);
-  }
-  return { error };
-}
-
-export async function reorderQuestions(surveyId: string, questionIds: string[]) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Authentication required." };
-
-  const updates = questionIds.map((id, index) =>
-    supabase.from('survey_questions').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
-  );
-
-  const results = await Promise.all(updates);
-  const error = results.find(r => r.error)?.error;
-
-  if (!error) {
-    revalidatePath(`/creator-surveys/${surveyId}/build`);
-  }
+  if (!error) revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { error };
 }
 
 export async function saveOption(questionId: string, option: Partial<SurveyOption>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+
+  // Get surveyId to check ownership
+  const { data: question } = await supabase
+    .from('survey_questions')
+    .select('survey_id')
+    .eq('id', questionId)
+    .single();
+
+  if (!question || !(await checkOwnership(supabase, question.survey_id, user.id))) {
+    return { error: "Access denied." };
+  }
 
   const { id, created_at, updated_at, ...optionData } = option as any;
 
@@ -450,8 +343,17 @@ export async function saveOption(questionId: string, option: Partial<SurveyOptio
 export async function deleteOption(questionId: string, optionId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+
+  const { data: question } = await supabase
+    .from('survey_questions')
+    .select('survey_id')
+    .eq('id', questionId)
+    .single();
+
+  if (!question || !(await checkOwnership(supabase, question.survey_id, user.id))) {
+    return { error: "Access denied." };
+  }
 
   const { error } = await supabase
     .from('survey_options')
@@ -462,10 +364,95 @@ export async function deleteOption(questionId: string, optionId: string) {
   return { error };
 }
 
-export async function getCreatorSurveys(page: number = 1, pageSize: number = 10): Promise<{ data?: Survey[], count?: number, error?: any }> {
+export async function saveLogicRule(surveyId: string, rule: any) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
+  const { id, created_at, updated_at, ...ruleData } = rule;
+
+  let result;
+  if (id && !id.startsWith('temp-')) {
+    result = await supabase
+      .from('survey_logic_rules')
+      .update(ruleData)
+      .eq('id', id)
+      .eq('survey_id', surveyId)
+      .select()
+      .single();
+  } else {
+    result = await supabase
+      .from('survey_logic_rules')
+      .insert({ ...ruleData, survey_id: surveyId })
+      .select()
+      .single();
+  }
+
+  return result;
+}
+
+export async function deleteLogicRule(surveyId: string, ruleId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  return await supabase
+    .from('survey_logic_rules')
+    .delete()
+    .eq('id', ruleId)
+    .eq('survey_id', surveyId);
+}
+
+export async function reorderSections(surveyId: string, sectionIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  const updates = sectionIds.map((id, index) =>
+    supabase.from('survey_sections').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
+  );
+  await Promise.all(updates);
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { success: true };
+}
+
+export async function reorderQuestions(surveyId: string, questionIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  const updates = questionIds.map((id, index) =>
+    supabase.from('survey_questions').update({ order_index: index }).eq('id', id).eq('survey_id', surveyId)
+  );
+  await Promise.all(updates);
+  revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { success: true };
+}
+
+export async function updateSurveyDetails(surveyId: string, updates: Partial<Survey>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
+
+  const { data, error } = await supabase
+    .from('surveys')
+    .update(updates)
+    .eq('id', surveyId)
+    .select()
+    .single();
+
+  if (!error) revalidatePath(`/creator-surveys/${surveyId}/build`);
+  return { data, error };
+}
+
+export async function getCreatorSurveys(page: number = 1, pageSize: number = 10) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Authentication required." };
 
   const from = (page - 1) * pageSize;
@@ -480,21 +467,19 @@ export async function getCreatorSurveys(page: number = 1, pageSize: number = 10)
 
   if (error) return { error };
 
-  // Map response_count to a number
   const formattedData = data.map(s => ({
     ...s,
     response_count: (s as any).response_count?.[0]?.count || 0
   }));
 
-  return JSON.parse(JSON.stringify({ data: formattedData as Survey[], count: count || 0 }, (key, value) =>
+  return JSON.parse(JSON.stringify({ data: formattedData, count: count || 0 }, (key, value) =>
     typeof value === 'bigint' ? value.toString() : value
   ));
 }
 
-export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: any }> {
+export async function getSurveyStats() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
 
   const { data: surveys, error } = await supabase
@@ -512,22 +497,19 @@ export async function getSurveyStats(): Promise<{ data?: SurveyStats, error?: an
     totalResponses: surveys.reduce((acc, s) => acc + ((s as any).response_count?.[0]?.count || 0), 0)
   };
 
-  return JSON.parse(JSON.stringify({ data: stats }, (key, value) =>
-    typeof value === 'bigint' ? value.toString() : value
-  ));
+  return { data: stats };
 }
 
 export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'published' | 'closed') {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { data, error } = await supabase
     .from('surveys')
     .update({ status })
     .eq('id', surveyId)
-    .eq('creator_id', user.id)
     .select()
     .single();
 
@@ -551,7 +533,6 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
   }
 
   revalidatePath('/creator-surveys');
-  revalidatePath('/creator');
   revalidatePath(`/creator-surveys/${surveyId}/build`);
   return { data };
 }
@@ -559,25 +540,18 @@ export async function updateSurveyStatus(surveyId: string, status: 'draft' | 'pu
 export async function duplicateSurvey(surveyId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
   const { data: existingSurvey, error: fetchError } = await supabase
     .from('surveys')
-    .select(`
-      *,
-      questions:survey_questions(
-        *,
-        options:survey_options(*)
-      )
-    `)
+    .select(`*, questions:survey_questions(*, options:survey_options(*)), sections:survey_sections(*)`)
     .eq('id', surveyId)
-    .eq('creator_id', user.id)
     .single();
 
   if (fetchError || !existingSurvey) return { error: "Survey not found." };
 
-  const { id, created_at, updated_at, questions, ...surveyData } = existingSurvey as any;
+  const { id, created_at, updated_at, questions, sections, ...surveyData } = existingSurvey as any;
 
   const { data: newSurvey, error: insertError } = await supabase
     .from('surveys')
@@ -585,23 +559,31 @@ export async function duplicateSurvey(surveyId: string) {
       ...surveyData,
       title: `${existingSurvey.title} (Copy)`,
       status: 'draft',
-      questions: []
+      legacy_questions: []
     })
     .select()
     .single();
 
   if (insertError) return { error: insertError };
 
-  // Duplicate questions and options
-  for (const q of (questions || [])) {
-    const { id: oldQid, created_at: qca, updated_at: qua, options, ...qData } = q;
-    const { data: newQ, error: qError } = await supabase
-      .from('survey_questions')
-      .insert({ ...qData, survey_id: newSurvey.id })
-      .select()
-      .single();
+  // Duplicate sections
+  const sectionMap: Record<string, string> = {};
+  for (const s of (sections || [])) {
+    const { id: oldSid, created_at: sca, updated_at: sua, ...sData } = s;
+    const { data: newS } = await supabase.from('survey_sections').insert({ ...sData, survey_id: newSurvey.id }).select().single();
+    if (newS) sectionMap[oldSid] = newS.id;
+  }
 
-    if (!qError && options) {
+  // Duplicate questions
+  for (const q of (questions || [])) {
+    const { id: oldQid, created_at: qca, updated_at: qua, options, section_id, ...qData } = q;
+    const { data: newQ } = await supabase.from('survey_questions').insert({
+      ...qData,
+      survey_id: newSurvey.id,
+      section_id: section_id ? sectionMap[section_id] : null
+    }).select().single();
+
+    if (newQ && options) {
       for (const o of options) {
         const { id: oldOid, created_at: oca, updated_at: oua, ...oData } = o;
         await supabase.from('survey_options').insert({ ...oData, question_id: newQ.id });
@@ -610,45 +592,28 @@ export async function duplicateSurvey(surveyId: string) {
   }
 
   revalidatePath('/creator-surveys');
-  revalidatePath('/creator');
   return { data: newSurvey };
 }
 
 export async function deleteSurvey(surveyId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { error: "Authentication required." };
+  if (!(await checkOwnership(supabase, surveyId, user.id))) return { error: "Access denied." };
 
-  const { error } = await supabase
-    .from('surveys')
-    .delete()
-    .eq('id', surveyId)
-    .eq('creator_id', user.id);
-
-  if (error) return { error };
-
-  revalidatePath('/creator-surveys');
-  revalidatePath('/creator');
-  return { success: true };
+  const { error } = await supabase.from('surveys').delete().eq('id', surveyId);
+  if (!error) revalidatePath('/creator-surveys');
+  return { success: !error, error };
 }
 
 export async function submitSurveyResponse(surveyId: string, answers: Record<string, any>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // If anonymous mode is disabled in settings, require auth
-  const { data: survey } = await supabase
-    .from('surveys')
-    .select('settings')
-    .eq('id', surveyId)
-    .single();
+  const { data: survey } = await supabase.from('surveys').select('settings').eq('id', surveyId).single();
+  if (survey?.settings?.anonymous === false && !user) return { error: "Authentication required." };
 
-  if (survey?.settings?.anonymous === false && !user) {
-    return { error: "Authentication required for this survey." };
-  }
-
-  const { data, error } = await supabase
+  return await supabase
     .from('survey_responses')
     .insert({
       survey_id: surveyId,
@@ -657,8 +622,4 @@ export async function submitSurveyResponse(surveyId: string, answers: Record<str
     })
     .select()
     .single();
-
-  if (error) return { error };
-
-  return { data };
 }
