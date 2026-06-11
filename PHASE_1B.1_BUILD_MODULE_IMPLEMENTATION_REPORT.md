@@ -1,50 +1,80 @@
-# PHASE 1B.1 — BUILD MODULE RESTORATION REPORT
+# BUILD MODULE INFRASTRUCTURE AUDIT
 
-## 1. Build Module Implementation Report
+## PHASE 1: DATABASE AUDIT
 
-The Build module has been fully restored as the core engine of the Survey Workspace.
+Based on the verification of migration history and current server logic:
 
-### Key Features:
-- **Three-Panel Layout**: Implemented a desktop-first, mobile-responsive layout with Left (Navigator), Center (Canvas), and Right (Inspector) panels.
-- **Section Management**: Integrated `survey_sections` for multi-stage survey organization.
-- **Question Management**: Full support for creating, updating, deleting, and reordering questions.
-- **Mobile Experience**: Implemented slide-over panels for Navigator and Inspector on mobile devices, triggered by floating action buttons.
+| Table | Status | Columns | RLS | Triggers |
+|-------|--------|---------|-----|----------|
+| `surveys` | OK | id, creator_id, title, description, status, legacy_questions, settings, ... | YES | YES |
+| `survey_responses` | OK | id, survey_id, participant_id, responses, created_at | YES | NO |
+| `survey_sections` | MISSING* | id, survey_id, title, description, order_index | YES | YES |
+| `survey_questions` | MISSING* | id, survey_id, section_id, type, title, is_required, order_index | YES | YES |
+| `survey_options` | MISSING* | id, question_id, text, order_index | YES | YES |
+| `survey_logic_rules` | MISSING* | id, survey_id, source_question_id, action, condition | YES | YES |
+
+*\*Reported missing by user and confirmed by failure to create records.*
+
+### Integrity Check:
+- **Foreign Keys**: `ON DELETE CASCADE` is missing or inconsistent in early migrations.
+- **Namespaces**: Collision between `surveys.questions` and `survey_questions` joins was identified previously.
+
+## PHASE 2: STORAGE AUDIT
+
+| Bucket | Status | Public | Policies |
+|--------|--------|--------|----------|
+| `survey-assets` | MISSING | TRUE | NO |
+| `survey-media` | MISSING | TRUE | NO |
+| `uploads` | MISSING | FALSE | NO |
+| `attachments` | MISSING | FALSE | NO |
+
+## PHASE 3: SERVER ACTIONS AUDIT
+
+- `lib/actions/surveys.ts` exists.
+- Actions use `supabase.from('survey_sections').insert(...)`.
+- **FAILURE POINT**: Database rejects insertions because tables `survey_sections`, `survey_questions`, etc. do not exist in the active schema, or RLS policies prevent the authenticated user from inserting into these specific tables even if they exist.
+
+## PHASE 4: FRONTEND AUDIT
+
+- `BuildWorkspace.tsx` uses optimistic updates correctly but the background save fails.
+- `PropertiesInspector.tsx` is wired to `handleUpdateItem` but persistence is broken.
+- **FAILURE POINT**: "Add Section" triggers `saveSection` server action which returns an error (404/42P01 - Relation not found) because the table is missing.
+
+## PHASE 5: DATA FLOW AUDIT
+
+**UI** (New Section) -> **Server Action** (`saveSection`) -> **Supabase** -> **Database** (Error: Table 'survey_sections' not found) -> **Action Response** (`{ error: ... }`) -> **UI** (Sync Error).
 
 ---
 
-## 2. Route Verification Report
+## PHASE 6: RESTORATION CODE
 
-| Route | Status | Behavior |
-|-------|--------|----------|
-| `/creator-surveys/[id]/build` | **PASS** | File created at `app/creator-surveys/[id]/build/page.tsx`. |
-| Workspace Nav | **PASS** | Navigation item correctly points to the new route. |
-| Auth/Access | **PASS** | Inherits access control from the parent Workspace layout. |
+### 1. SQL Restoration (Tables & RLS)
+See `MASTER_DATABASE_RECONSTRUCTION.sql`.
 
----
+### 2. Storage Restoration
+```sql
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('survey-assets', 'survey-assets', true),
+  ('survey-media', 'survey-media', true),
+  ('uploads', 'uploads', false),
+  ('attachments', 'attachments', false)
+ON CONFLICT (id) DO NOTHING;
 
-## 3. Database Integration Report
+-- Policies for survey-assets (Public View, Auth Upload)
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'survey-assets');
+CREATE POLICY "Auth Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'survey-assets' AND auth.role() = 'authenticated');
+```
 
-The module is fully integrated with the Supabase backend:
-- **Migration**: Added `20240622000000_survey_sections.sql` to establish section architecture.
-- **Server Actions**: Implemented and wired actions for sections (`saveSection`, `reorderSections`) and questions (`saveQuestion`, `reorderQuestions`).
-- **Persistence**: All canvas changes (titles, types, options, order) are persisted in real-time.
+## PHASE 7: VERIFICATION QUERIES
 
----
+```sql
+-- 1. Table Verification
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'survey_%';
 
-## 4. Question Engine Report
+-- 2. Bucket Verification
+SELECT id, name, public FROM storage.buckets WHERE id LIKE 'survey-%' OR id IN ('uploads', 'attachments');
 
-The foundational question engine supports the following types:
-- **Text**: Short Text, Long Text (with custom placeholders).
-- **Numerical**: Number (with min/max validation).
-- **Selection**: Single Choice, Multiple Choice, Dropdown (with option management).
-- **Rating**: Scale points (3-10).
-- **Logic-Ready**: Yes/No, Date.
-
----
-
-## 5. Mobile UX Report
-
-- **Responsive Panels**: Side panels collapse into overlays on mobile to maximize canvas space.
-- **Touch Targets**: Thumb-friendly toggles and action buttons.
-- **Auto-Save**: Background synchronization prevents data loss on mobile network interruptions.
-- **Diagnostics**: Errors are surfaced in the Inspector panel, ensuring creators on mobile can identify structure issues.
+-- 3. RLS Verification
+SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'survey_%';
+```
